@@ -1,0 +1,55 @@
+<!-- templates/find_party.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Find Party - Bunker</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #1a1a1a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        h1 {
+            margin-bottom: 30px;
+            color: #f5a623;
+        }
+        .input-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            width: 300px;
+        }
+        input, button {
+            padding: 15px;
+            font-size: 18px;
+            border-radius: 8px;
+            border: none;
+        }
+        button {
+            background-color: #f5a623;
+            color: #000;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+        button:hover {
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+    <h1>Find a Party</h1>
+    <form class="input-container" method="get">
+        <input type="text" name="search_query" placeholder="Search by Party Name">
+        <button type="submit">Find</button>
+    </form>
+    <br>
+    <a href="{% url 'main' %}" style="color: #f5a623;">Back to Lobby</a>
+</body>
+</html>

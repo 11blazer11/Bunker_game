@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Bunker Game - Login</title>
+    <style>
+        /* Body & Background */
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #333333);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #fff;
+        }
+
+        /* Login Box */
+        .login-box {
+            background: rgba(0,0,0,0.85);
+            padding: 50px 40px;
+            border-radius: 15px;
+            width: 100%;          /* Take full width but constrained by max-width */
+            max-width: 350px;     /* Maximum width for large screens */
+            box-shadow: 0 0 25px rgba(0,0,0,0.6);
+            text-align: center;
+            margin: 0 20px;       /* Add side margin for small screens */
+        }
+        
+        .login-box h2 {
+            margin-bottom: 30px;
+            font-size: 32px;
+            color: #f5a623;
+            letter-spacing: 1px;
+        }
+
+        /* Input Fields */
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;   /* left padding reduced */
+            margin: 10px 0;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            box-sizing: border-box; /* ensures padding doesn't push text out */
+            text-align: left;       /* ensure text is aligned to left */
+        }
+
+        /* Buttons */
+        button {
+            width: 100%;
+            padding: 15px;
+            margin-top: 15px;
+            background-color: #4CAF50;
+            color: #fff;
+            font-size: 18px;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        button:hover {
+            background-color: #45a049;
+            transform: scale(1.05);
+        }
+
+        /* Links */
+        a {
+            display: block;
+            margin-top: 15px;
+            color: #f5a623;
+            text-decoration: none;
+            transition: 0.3s;
+        }
+
+        a:hover {
+            color: #fff;
+        }
+
+        /* Error Messages */
+        .error-box {
+            background: #ffe6e6;
+            border: 1px solid #ff4d4d;
+            color: #cc0000;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: left;
+            animation: shake 0.3s;
+        }
+
+        .error-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        @keyframes shake {
+            0% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            100% { transform: translateX(0); }
+        }
+
+        /* Responsive */
+        @media(max-width: 400px) {
+            .login-box {
+                width: 90%;
+                padding: 30px 20px;
+            }
+            button {
+                font-size: 16px;
+                padding: 12px;
+            }
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-box">
+        <h2>Login to Bunker</h2>
+
+        {% if messages %}
+        <div class="error-box">
+            {% for message in messages %}
+                <p>⚠ {{ message }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+            <input type="text" name="username" placeholder="Username" required>
+            <input type="password" name="password" placeholder="Password" required>
+            <button type="submit">Login</button>
+        </form>
+
+        <a href="{% url 'register' %}">Create a new account</a>
+    </div>
+
+</body>
+</html>
