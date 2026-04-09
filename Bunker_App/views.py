@@ -78,7 +78,7 @@ def login_view(request):
                 if user:
                     login(request, user)
                     return redirect('main')  # main page
-                else:
+                else:  
                     messages.error(request, "Invalid password!")
                     return redirect('login')
             else:
