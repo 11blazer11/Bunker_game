@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <title>Bunker Game - Register</title>
     <style>
-        /* Body & Background */
         body {
             margin: 0;
             font-family: 'Arial', sans-serif;
@@ -16,7 +15,6 @@
             color: #fff;
         }
 
-        /* Register Box */
         .register-box {
             background: rgba(0,0,0,0.85);
             padding: 50px 40px;
@@ -29,15 +27,12 @@
         }
         
         .register-box h2 {
-            margin-bottom: 30px;
-            font-size: 32px;
+            margin-bottom: 25px;
+            font-size: 30px;
             color: #f5a623;
-            letter-spacing: 1px;
         }
 
-        /* Input Fields */
-        input[type="text"],
-        input[type="password"] {
+        input {
             width: 100%;
             padding: 12px 15px;
             margin: 10px 0;
@@ -45,10 +40,13 @@
             border-radius: 8px;
             font-size: 16px;
             box-sizing: border-box;
-            text-align: left;
         }
 
-        /* Buttons */
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 8px #f5a623;
+        }
+
         button {
             width: 100%;
             padding: 15px;
@@ -59,7 +57,7 @@
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: 0.3s;
         }
 
         button:hover {
@@ -67,20 +65,17 @@
             transform: scale(1.05);
         }
 
-        /* Links */
         a {
             display: block;
             margin-top: 15px;
             color: #f5a623;
             text-decoration: none;
-            transition: 0.3s;
         }
 
         a:hover {
             color: #fff;
         }
 
-        /* Error Messages */
         .error-box {
             background: #ffe6e6;
             border: 1px solid #ff4d4d;
@@ -102,48 +97,38 @@
             50% { transform: translateX(5px); }
             100% { transform: translateX(0); }
         }
-
-        /* Responsive */
-        @media(max-width: 400px) {
-            .register-box {
-                width: 90%;
-                padding: 30px 20px;
-            }
-            button {
-                font-size: 16px;
-                padding: 12px;
-            }
-        }
-
     </style>
 </head>
 <body>
 
-    <div class="register-box">
-        <h2>Create Account</h2>
+<div class="register-box">
+    <h2>Create Account</h2>
 
-        {% load widget_tweaks %}
+    {% load widget_tweaks %}
 
-        {% if form.errors %}
-        <div class="error-box">
-            {% for field in form %}
-                {% for error in field.errors %}
-                    <p>⚠ {{ error }}</p>
-                {% endfor %}
+    {% if form.errors %}
+    <div class="error-box">
+        {% for field in form %}
+            {% for error in field.errors %}
+                <p>⚠ {{ error }}</p>
             {% endfor %}
-        </div>
-        {% endif %}
-
-        <form method="POST">
-            {% csrf_token %}
-            {{ form.username|attr:"placeholder:Username" }}
-            {{ form.password1|attr:"placeholder:Password" }}
-            {{ form.password2|attr:"placeholder:Confirm Password" }}
-            <button type="submit">Register</button>
-        </form>
-
-        <a href="{% url 'login' %}">Already have an account? Login</a>
+        {% endfor %}
     </div>
+    {% endif %}
+
+    <form method="POST">
+        {% csrf_token %}
+
+        {{ form.username|attr:"placeholder:Username" }}
+        {{ form.email|attr:"placeholder:Email" }}
+        {{ form.password1|attr:"placeholder:Password" }}
+        {{ form.password2|attr:"placeholder:Confirm Password" }}
+
+        <button type="submit">Register</button>
+    </form>
+
+    <a href="{% url 'login' %}">Already have an account? Login</a>
+</div>
 
 </body>
 </html>
