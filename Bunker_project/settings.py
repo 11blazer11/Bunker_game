@@ -58,6 +58,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = 'bebiashvili.dachi@gmail.com'
 EMAIL_HOST_PASSWORD = 'zaig pgob jcvk uevr'
 
+
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',

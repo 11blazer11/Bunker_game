@@ -6,14 +6,47 @@ from .charachteristics import *
 from django.contrib import messages
 from .utils import login_required_message
 import random
-
-#register, login, logout
-from django.core.mail import send_mail
+from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
-from django.utils.http import urlsafe_base64_encode
-from django.utils.encoding import force_bytes
-from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail, EmailMessage
+from .tokens import account_activation_token
+from django.contrib.auth import get_user_model
 from django.urls import reverse
+
+def activate(request, uidb64, token):
+    User = get_user_model()
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    if user is not None and account_activation_token.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, 'Thank you for your email confirmation. You can now login to your account.')
+        return redirect('login')  
+    else:
+        messages.error(request, 'Activation link is invalid!')
+        return redirect('login')
+
+def verify_email(request,  user, to_email):
+    mail_subject = 'Activate your user acount'
+    message = render_to_string('verify_email.html', {
+        'user': user.username,
+        'domain': get_current_site(request).domain,
+        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
+        'token': account_activation_token.make_token(user),
+        'protocol': 'https' if request.is_secure() else 'http',
+    })
+
+    email = EmailMessage(mail_subject, message, to=[to_email])
+    if email.send():
+        messages.success(request, f'Please confirm your email address to complete the registration. We have sent you an email to {to_email}')
+    else:
+        messages.error(request, f'Problem sending email to {to_email}, check if you typed it correctly.')
+
 
 def register_view(request):
     form = CustomUserCreationForm(request.POST)
@@ -23,65 +56,39 @@ def register_view(request):
             user = form.save(commit=False)
             user.is_active = False  # ❗ disable account until email verified
             user.save()
-
-            # Generate token
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            token = default_token_generator.make_token(user)
-
-            domain = get_current_site(request).domain
-            link = f"http://{domain}{reverse('verify_email', args=[uid, token])}"
-
-            # Send email
-            send_mail(
-                'Verify your account',
-                f'Click this link to verify your account:\n{link}',
-                'your_email@gmail.com',
-                [user.email],
-                fail_silently=False,
-            )
-
+            verify_email(request, user, form.cleaned_data.get('email'))
             return redirect('login')
 
-    else:
-        form = CustomUserCreationForm()
-
     return render(request, 'register.html', {'form': form})
-
-from django.utils.http import urlsafe_base64_decode
-from django.contrib.auth.models import User
-
-def verify_email(request, uidb64, token):
-    try:
-        uid = urlsafe_base64_decode(uidb64).decode()
-        user = User.objects.get(pk=uid)
-    except:
-        user = None
-
-    if user and default_token_generator.check_token(user, token):
-        user.is_active = True
-        user.save()
-        messages.success(request, "Email verified! You can now login.")
-        return redirect('login')
-    else:
-        messages.error(request, "Invalid or expired link.")
-        return redirect('login')
 
 
 def login_view(request):
     if request.method == 'POST':
-        user = authenticate(
-            request,
-            username=request.POST.get('username'),
-            password=request.POST.get('password')
-        )
-        if user:
-            if user.is_active:
-                login(request, user)
-                return redirect('main')
-        else:
-            messages.error(request, "Verify your email first!")
+        email = request.POST.get('email')
+        password = request.POST.get('password')
 
-    return render(request, 'login.html')  
+        try:
+            user_obj = User.objects.get(email=email)
+        except User.DoesNotExist:
+            user_obj = None
+
+        if user_obj:
+            if user_obj.is_active:
+                user = authenticate(request, username=user_obj.username, password=password)
+                if user:
+                    login(request, user)
+                    return redirect('main')  # main page
+                else:
+                    messages.error(request, "Invalid password!")
+                    return redirect('login')
+            else:
+                # User exists but email not verified → redirect to verify page
+                return redirect('verify_email')
+        else:
+            messages.error(request, "No account found with this email!")
+            return redirect('login')
+
+    return render(request, 'login.html')
 
 
 def logout_view(request):

@@ -37,6 +37,7 @@
 
         /* Input Fields */
         input[type="text"],
+        input[type="email"],
         input[type="password"] {
             width: 100%;
             padding: 12px 15px;   /* left padding reduced */
@@ -47,6 +48,8 @@
             box-sizing: border-box; /* ensures padding doesn't push text out */
             text-align: left;       /* ensure text is aligned to left */
         }
+
+        
 
         /* Buttons */
         button {
@@ -97,10 +100,32 @@
             font-size: 14px;
         }
 
+        /* Success Messages */
+        .success-box {
+            background: #e6ffe6;
+            border: 1px solid #4CAF50;
+            color: #2d5016;
+            padding: 12px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            text-align: left;
+            animation: fadeIn 0.5s;
+        }
+
+        .success-box p {
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
         @keyframes shake {
             0% { transform: translateX(-5px); }
             50% { transform: translateX(5px); }
             100% { transform: translateX(0); }
+        }
+
+        @keyframes fadeIn {
+            0% { opacity: 0; }
+            100% { opacity: 1; }
         }
 
         /* Responsive */
@@ -123,16 +148,23 @@
         <h2>Login to Bunker</h2>
 
         {% if messages %}
-        <div class="error-box">
             {% for message in messages %}
-                <p>⚠ {{ message }}</p>
+                {% if message.tags == 'success' %}
+                    <div class="success-box">
+                        <p>✓ {{ message }}</p>
+                    </div>
+                {% else %}
+                    <div class="error-box">
+                        <p>⚠ {{ message }}</p>
+                    </div>
+                {% endif %}
             {% endfor %}
-        </div>
         {% endif %}
 
         <form method="post">
             {% csrf_token %}
             <input type="text" name="username" placeholder="Username" required>
+            <input type="email" name="email" placeholder="Email" required>
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Login</button>
         </form>
