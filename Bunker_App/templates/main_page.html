@@ -124,7 +124,18 @@
 
     <!-- Main Lobby -->
     <div class="main-box">
-        <h2>Welcome to the Lobby</h2>
+        <h2>Welcome to Bunker Online</h2>
+        {% if user_lobbies %}
+        <h3>Your Lobbies:</h3>
+        <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
+            {% for lobby in user_lobbies %}
+            <li style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 8px;">
+                <strong>{{ lobby.name }}</strong> (Code: {{ lobby.code }})
+                <a href="{% url 'lobby_detail' lobby.id %}" style="color: #f5a623; margin-left: 10px;">View</a>
+            </li>
+            {% endfor %}
+        </ul>
+        {% endif %}
         <div class="button-container">
             <a href="{% url 'join_party' %}" class="game-button">Join Party</a>
             <a href="{% url 'create_party' %}" class="game-button">Create Party</a>

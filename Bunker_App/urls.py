@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, logout_view, main_view, create_party_view, find_party_view, join_party_view, activate
+from .views import register_view, login_view, logout_view, main_view, create_party_view, find_party_view, join_party_view, activate, lobby_detail_view
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -9,6 +9,7 @@ urlpatterns = [
     path('create/', create_party_view, name='create_party'),
     path('find/', find_party_view, name='find_party'),
     path('join/', join_party_view, name='join_party'),
+    path('lobby/<int:lobby_id>/', lobby_detail_view, name='lobby_detail'),
 
     path('activate/<token>/', activate, name='activate'),
-]
+] 

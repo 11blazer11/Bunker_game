@@ -9,4 +9,4 @@ def login_required_message(view_func):
             messages.warning(request, "Try to login to access this page")
             return redirect('login')  # redirect to your login page
         return view_func(request, *args, **kwargs)
-    return wrapper
+    return wrapper 
