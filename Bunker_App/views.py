@@ -1,6 +1,8 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, login, logout, get_user_model
+from django.contrib.auth.hashers import make_password
+from django.core.signing import dumps, loads, BadSignature, SignatureExpired
 from .forms import CustomUserCreationForm
 from .charachteristics import *
 from django.contrib import messages
@@ -8,44 +10,58 @@ from .utils import login_required_message
 import random
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
-from django.utils.http import urlsafe_base64_decode, urlsafe_base64_encode
-from django.utils.encoding import force_bytes, force_str
-from django.core.mail import send_mail, EmailMessage
-from .tokens import account_activation_token
-from django.contrib.auth import get_user_model
-from django.urls import reverse
+from django.core.mail import EmailMessage
 
-def activate(request, uidb64, token):
+def activate(request, token):
     User = get_user_model()
     try:
-        uid = force_str(urlsafe_base64_decode(uidb64))
-        user = User.objects.get(pk=uid)
-    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-        user = None
-    if user is not None and account_activation_token.check_token(user, token):
-        user.is_active = True
-        user.save()
-        messages.success(request, 'Thank you for your email confirmation. You can now login to your account.')
-        return redirect('login')  
-    else:
+        payload = loads(token, salt=ACTIVATION_SALT, max_age=ACTIVATION_MAX_AGE)
+    except SignatureExpired:
+        messages.error(request, 'Activation link has expired. Please register again.')
+        return redirect('register')
+    except BadSignature:
         messages.error(request, 'Activation link is invalid!')
+        return redirect('register')
+
+    username = payload.get('username')
+    email = payload.get('email')
+    password = payload.get('password')
+
+    if User.objects.filter(username=username).exists() or User.objects.filter(email=email).exists():
+        messages.warning(request, 'This account has already been activated or email is already registered.')
         return redirect('login')
 
-def verify_email(request,  user, to_email):
-    mail_subject = 'Activate your user acount'
+    user = User(username=username, email=email, password=password, is_active=True)
+    user.save()
+    messages.success(request, 'Thank you for your email confirmation. You can now login to your account.')
+    return redirect('login')
+
+ACTIVATION_SALT = 'activate-account'
+ACTIVATION_MAX_AGE = 60 * 60 * 24  
+
+
+def send_verification_email(request, username, email_address, password):
+    mail_subject = 'Activate your user account'
+    payload = {
+        'username': username,
+        'email': email_address,
+        'password': make_password(password),
+    }
+    token = dumps(payload, salt=ACTIVATION_SALT)
     message = render_to_string('verify_email.html', {
-        'user': user.username,
+        'user': username,
         'domain': get_current_site(request).domain,
-        'uid': urlsafe_base64_encode(force_bytes(user.pk)),
-        'token': account_activation_token.make_token(user),
+        'token': token,
         'protocol': 'https' if request.is_secure() else 'http',
     })
 
-    email = EmailMessage(mail_subject, message, to=[to_email])
+    email = EmailMessage(mail_subject, message, to=[email_address])
     if email.send():
-        messages.success(request, f'Please confirm your email address to complete the registration. We have sent you an email to {to_email}')
+        messages.success(request, f'Please confirm your email address to complete the registration. We have sent you an email to {email_address}')
+        return True
     else:
-        messages.error(request, f'Problem sending email to {to_email}, check if you typed it correctly.')
+        messages.error(request, f'Problem sending email to {email_address}, check if you typed it correctly.')
+        return False
 
 
 def register_view(request):
@@ -53,11 +69,11 @@ def register_view(request):
     if request.method == "POST":
         
         if form.is_valid():
-            user = form.save(commit=False)
-            user.is_active = False  # ❗ disable account until email verified
-            user.save()
-            verify_email(request, user, form.cleaned_data.get('email'))
-            return redirect('login')
+            username = form.cleaned_data.get('username')
+            email = form.cleaned_data.get('email')
+            password = form.cleaned_data.get('password1')
+            if send_verification_email(request, username, email, password):
+                return redirect('login')
 
     return render(request, 'register.html', {'form': form})
 
@@ -77,13 +93,13 @@ def login_view(request):
                 user = authenticate(request, username=user_obj.username, password=password)
                 if user:
                     login(request, user)
-                    return redirect('main')  # main page
-                else:  
+                    return redirect('main')  
+                else:
                     messages.error(request, "Invalid password!")
                     return redirect('login')
             else:
-                # User exists but email not verified → redirect to verify page
-                return redirect('verify_email')
+                messages.warning(request, "Your account is inactive. Please check your email for the activation link.")
+                return redirect('login')
         else:
             messages.error(request, "No account found with this email!")
             return redirect('login')

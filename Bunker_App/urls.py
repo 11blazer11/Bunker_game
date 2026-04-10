@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import register_view, login_view, logout_view, main_view, create_party_view, find_party_view, join_party_view, verify_email, activate
+from .views import register_view, login_view, logout_view, main_view, create_party_view, find_party_view, join_party_view, activate
 
 urlpatterns = [
     path('register/', register_view, name='register'),
@@ -10,5 +10,5 @@ urlpatterns = [
     path('find/', find_party_view, name='find_party'),
     path('join/', join_party_view, name='join_party'),
 
-    path('verify/<uidb64>/<token>/', activate, name='activate'),
+    path('activate/<token>/', activate, name='activate'),
 ]

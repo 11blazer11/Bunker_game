@@ -55,8 +55,8 @@ EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'bebiashvili.dachi@gmail.com'
-EMAIL_HOST_PASSWORD = 'zaig pgob jcvk uevr'
+EMAIL_HOST_USER = 'bunkergamege@gmail.com'
+EMAIL_HOST_PASSWORD = 'nhiy pvlv xxwa rfpq'
 
 
 MIDDLEWARE = [
@@ -79,6 +79,7 @@ TEMPLATES = [
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.request',
+                'django.template.context_processors.csrf',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
             ],
