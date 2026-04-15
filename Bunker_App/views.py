@@ -65,7 +65,7 @@ def send_verification_email(request, username, email_address, password):
     else:
         messages.error(request, f'Problem sending email to {email_address}, check if you typed it correctly.')
         return False
-
+  
 
 def register_view(request):
     form = CustomUserCreationForm(request.POST)
