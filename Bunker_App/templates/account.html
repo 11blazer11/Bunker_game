@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Bunker Game - Main Lobby</title>
+    <title>Account - Bunker</title>
     <style>
-        /* General Body */
         body {
             margin: 0;
             font-family: 'Arial', sans-serif;
@@ -12,7 +11,6 @@
             color: #fff;
         }
 
-        /* Navbar */
         .navbar {
             display: flex;
             justify-content: space-between;
@@ -49,6 +47,11 @@
             gap: 20px;
         }
 
+        .navbar .nav-right span {
+            font-weight: bold;
+            color: #f5a623;
+        }
+
         .navbar .nav-right a {
             padding: 8px 16px;
             background-color: #f44336;
@@ -72,9 +75,8 @@
             color: #fff;
         }
 
-        /* Main Content Box */
-        .main-box {
-            max-width: 500px;
+        .account-container {
+            max-width: 600px;
             margin: 80px auto;
             background-color: rgba(0,0,0,0.8);
             padding: 40px;
@@ -83,48 +85,33 @@
             box-shadow: 0 0 20px rgba(0,0,0,0.6);
         }
 
-        .main-box h2 {
-            font-size: 32px;
-            margin-bottom: 30px;
+        .account-container h2 {
             color: #f5a623;
+            margin-bottom: 20px;
         }
 
-        /* Game Buttons */
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .game-button {
+        .account-info {
+            text-align: left;
+            background: rgba(255,255,255,0.1);
             padding: 20px;
-            font-size: 22px;
-            background-color: #f44336;
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s ease;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+
+        .account-info p {
+            margin: 10px 0;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #f5a623;
             text-decoration: none;
         }
 
-        .game-button:hover {
-            background-color: #d32f2f;
-            transform: scale(1.05);
+        .back-link:hover {
+            color: #fff;
         }
-
-        /* Responsive */
-        @media(max-width: 600px) {
-            .main-box {
-                margin: 40px 20px;
-                padding: 30px;
-            }
-            .game-button {
-                font-size: 20px;
-                padding: 15px;
-            }
-        }
-
     </style>
 </head>
 <body>
@@ -140,25 +127,16 @@
         </div>
     </div>
 
-    <!-- Main Lobby -->
-    <div class="main-box">
-        <h2>Welcome to Bunker Online</h2>
-        {% if user_lobbies %}
-        <h3>Your Lobbies:</h3>
-        <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
-            {% for lobby in user_lobbies %}
-            <li style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 8px;">
-                <strong>{{ lobby.name }}</strong> (Code: {{ lobby.code }})
-                <a href="{% url 'lobby_detail' lobby.id %}" style="color: #f5a623; margin-left: 10px;">View</a>
-            </li>
-            {% endfor %}
-        </ul>
-        {% endif %}
-        <div class="button-container">
-            <a href="{% url 'join_party' %}" class="game-button">Join Party</a>
-            <a href="{% url 'create_party' %}" class="game-button">Create Party</a>
-            <a href="{% url 'find_party' %}" class="game-button">Find Party</a>
+    <!-- Account Info -->
+    <div class="account-container">
+        <h2>Your Account</h2>
+        <div class="account-info">
+            <p><strong>Username:</strong> {{ request.user.username }}</p>
+            <p><strong>Email:</strong> {{ request.user.email }}</p>
+            <p><strong>ID:</strong> {{ request.user.id }}</p>
+            <p><strong>Name:</strong> {{ request.user.profile.name|default:"Not set" }}</p>
         </div>
+        <a href="{% url 'main' %}" class="back-link">Back to Main</a>
     </div>
 
 </body>

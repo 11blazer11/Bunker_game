@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Friends - Bunker</title>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #1a1a1a, #333333);
+            color: #fff;
+        }
+
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 40px;
+            background-color: #111;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .navbar h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #f5a623;
+            letter-spacing: 1px;
+        }
+
+        .navbar .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .navbar .nav-right span {
+            font-weight: bold;
+            color: #f5a623;
+        }
+
+        .navbar .nav-right a {
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: #fff;
+            text-decoration: none;
+            border-radius: 6px;
+            transition: 0.3s;
+        }
+
+        .navbar .nav-right a:hover {
+            background-color: #d32f2f;
+        }
+
+        .navbar .nav-right .account-link {
+            background: none;
+            color: #f5a623;
+            padding: 0;
+        }
+
+        .navbar .nav-right .account-link:hover {
+            color: #fff;
+        }
+
+        .friends-container {
+            max-width: 800px;
+            margin: 80px auto;
+            background-color: rgba(0,0,0,0.8);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.6);
+        }
+
+        .friends-container h2 {
+            color: #f5a623;
+            margin-bottom: 20px;
+        }
+
+        .add-friend {
+            margin-bottom: 30px;
+        }
+
+        .add-friend form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .add-friend input {
+            flex: 1;
+            padding: 10px;
+            border-radius: 8px;
+            border: none;
+        }
+
+        .add-friend button {
+            padding: 10px 20px;
+            background-color: #f5a623;
+            color: #000;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section h3 {
+            color: #f5a623;
+            margin-bottom: 10px;
+        }
+
+        .friend-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .friend-item {
+            background: rgba(255,255,255,0.1);
+            margin: 5px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 20px;
+            color: #f5a623;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navbar -->
+    <div class="navbar">
+        <h1>Bunker</h1>
+        <div class="nav-right">
+            <span>{{ request.user.username }}</span>
+            <a href="{% url 'account' %}" class="account-link" style="margin-left: 10px; text-decoration: none; font-size: 20px;">&#128100;</a>
+            <a href="{% url 'friends' %}">Friends</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </div>
+    </div>
+
+    <!-- Friends -->
+    <div class="friends-container">
+        <h2>Friends</h2>
+
+        <div class="add-friend">
+            <h3>Add Friend</h3>
+            <form method="post">
+                {% csrf_token %}
+                <input type="text" name="username" placeholder="Enter username" required>
+                <button type="submit">Add Friend</button>
+            </form>
+        </div>
+
+        {% if friend_requests %}
+        <div class="section">
+            <h3>Friend Requests</h3>
+            <ul class="friend-list">
+                {% for request in friend_requests %}
+                <li class="friend-item">
+                    {{ request.from_user.username }}
+                    <div>
+                        <form method="post" action="{% url 'accept_friend' request.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: #4caf50; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Accept</button>
+                        </form>
+                        <form method="post" action="{% url 'decline_friend' request.id %}" style="display: inline; margin-left: 5px;">
+                            {% csrf_token %}
+                            <button type="submit" style="background: #f44336; color: #fff; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Decline</button>
+                        </form>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        <div class="section">
+            <h3>Your Friends</h3>
+            {% if friends %}
+            <ul class="friend-list">
+                {% for friend in friends %}
+                <li class="friend-item">
+                    {% if friend.from_user == request.user %}
+                        {{ friend.to_user.username }}
+                    {% else %}
+                        {{ friend.from_user.username }}
+                    {% endif %}
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <p>No friends yet.</p>
+            {% endif %}
+        </div>
+
+        <a href="{% url 'main' %}" class="back-link">Back to Main</a>
+    </div>
+
+</body>
+</html>

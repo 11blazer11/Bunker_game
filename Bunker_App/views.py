@@ -4,10 +4,11 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.signing import dumps, loads, BadSignature, SignatureExpired
 from .forms import CustomUserCreationForm
-from .models import Lobby
+from .models import Lobby, Friend
 from .charachteristics import *
 from django.contrib import messages
 from .utils import login_required_message
+from django.db.models import Q
 import random
 
 MAX_LOBBY_PARTICIPANTS = 9
@@ -119,6 +120,70 @@ def logout_view(request):
 def main_view(request):
     user_lobbies = request.user.joined_lobbies.all()
     return render(request, 'main_page.html', {'user_lobbies': user_lobbies})
+
+
+@login_required_message
+def account_view(request):
+    return render(request, 'account.html')
+
+
+@login_required_message
+def friends_view(request):
+    from .models import Friend, Profile
+    friends = Friend.objects.filter(
+        (Q(from_user=request.user) | Q(to_user=request.user)) & Q(status='accepted')
+    ).select_related('from_user', 'to_user')
+    
+    friend_requests = Friend.objects.filter(to_user=request.user, status='pending').select_related('from_user')
+    
+    if request.method == 'POST':
+        username = request.POST.get('username')
+        if username:
+            try:
+                friend_user = User.objects.get(username=username)
+                if friend_user != request.user:
+                    # Check if already friends or request exists
+                    existing = Friend.objects.filter(
+                        (Q(from_user=request.user, to_user=friend_user) | Q(from_user=friend_user, to_user=request.user))
+                    ).first()
+                    if not existing:
+                        Friend.objects.create(from_user=request.user, to_user=friend_user)
+                        messages.success(request, f'Friend request sent to {username}')
+                    else:
+                        messages.warning(request, 'Friend request already exists or you are already friends.')
+                else:
+                    messages.error(request, 'You cannot add yourself as a friend.')
+            except User.DoesNotExist:
+                messages.error(request, f'User {username} not found.')
+    
+    return render(request, 'friends.html', {
+        'friends': friends,
+        'friend_requests': friend_requests,
+    })
+
+
+@login_required_message
+def accept_friend_view(request, friend_id):
+    try:
+        friend_request = Friend.objects.get(id=friend_id, to_user=request.user, status='pending')
+        friend_request.status = 'accepted'
+        friend_request.save()
+        messages.success(request, f'You are now friends with {friend_request.from_user.username}')
+    except Friend.DoesNotExist:
+        messages.error(request, 'Friend request not found.')
+    return redirect('friends')
+
+
+@login_required_message
+def decline_friend_view(request, friend_id):
+    try:
+        friend_request = Friend.objects.get(id=friend_id, to_user=request.user, status='pending')
+        friend_request.status = 'declined'
+        friend_request.save()
+        messages.success(request, f'Friend request from {friend_request.from_user.username} declined.')
+    except Friend.DoesNotExist:
+        messages.error(request, 'Friend request not found.')
+    return redirect('friends')
 
 
 @login_required_message
