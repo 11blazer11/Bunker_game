@@ -127,13 +127,29 @@ def join_party_view(request):
         code = request.POST.get('party_code')
         try:
             lobby = Lobby.objects.get(code=code)
+            current_lobby = request.user.joined_lobbies.exclude(id=lobby.id).first()
+
             if request.user in lobby.participants.all():
                 messages.warning(request, 'You are already in this lobby.')
                 return redirect('lobby_detail', lobby_id=lobby.id)
+
+            if current_lobby and request.POST.get('confirm') != 'true':
+                return render(request, 'join_party_confirm.html', {
+                    'current_lobby': current_lobby,
+                    'new_lobby': lobby,
+                    'party_code': code,
+                })
+
             if lobby.participants.count() >= MAX_LOBBY_PARTICIPANTS:
                 messages.error(request, f'Lobby is full. Maximum {MAX_LOBBY_PARTICIPANTS} participants allowed.')
                 return redirect('join_party')
-            # Remove user from any existing lobbies
+
+            if current_lobby:
+                if current_lobby.creator == request.user:
+                    current_lobby.delete()
+                else:
+                    current_lobby.participants.remove(request.user)
+
             request.user.joined_lobbies.clear()
             lobby.participants.add(request.user)
             messages.success(request, f'Joined lobby "{lobby.name}"')
@@ -145,9 +161,16 @@ def join_party_view(request):
  
 @login_required_message
 def create_party_view(request):
-    # Automatically create a lobby when the user loads this page.
-    # The lobby name is generated from the creator username.
-    request.user.joined_lobbies.clear()
+    current_lobby = request.user.joined_lobbies.first()
+    if current_lobby and request.method != 'POST':
+        return render(request, 'create_party_confirm.html', {'current_lobby': current_lobby})
+
+    if current_lobby:
+        if current_lobby.creator == request.user:
+            current_lobby.delete()
+        else:
+            current_lobby.participants.remove(request.user)
+
     code = random.randint(100000, 999999)
     while Lobby.objects.filter(code=code).exists():
         code = random.randint(100000, 999999)
@@ -160,8 +183,11 @@ def create_party_view(request):
 @login_required_message
 def find_party_view(request):
     query = request.GET.get('search_query')
-    lobbies = Lobby.objects.filter(name__icontains=query) if query else Lobby.objects.none()
-    return render(request, 'find_party.html', {'lobbies': lobbies})
+    if query:
+        lobbies = Lobby.objects.filter(name__icontains=query)
+    else:
+        lobbies = Lobby.objects.exclude(participants=request.user)
+    return render(request, 'find_party.html', {'lobbies': lobbies, 'query': query})
 
 
 @login_required_message
@@ -172,9 +198,9 @@ def lobby_detail_view(request, lobby_id):
             messages.error(request, 'You are not a participant in this lobby.')
             return redirect('main')
         
-        if request.method == 'POST' and request.user == lobby.creator:
+        if request.method == 'POST':
             action = request.POST.get('action')
-            if action == 'kick':
+            if action == 'kick' and request.user == lobby.creator:
                 user_id = request.POST.get('user_id')
                 try:
                     user_to_kick = User.objects.get(id=user_id)
@@ -185,11 +211,28 @@ def lobby_detail_view(request, lobby_id):
                         messages.error(request, 'Cannot kick this user.')
                 except User.DoesNotExist:
                     messages.error(request, 'User not found.')
-            elif action == 'delete':
+            elif action == 'delete' and request.user == lobby.creator:
                 lobby.delete()
                 messages.success(request, 'Lobby deleted successfully.')
                 return redirect('main')
-        
+            elif action == 'leave' and request.user in lobby.participants.all():
+                if request.user == lobby.creator:
+                    next_creator = lobby.participants.exclude(id=request.user.id).order_by('id').first()
+                    if next_creator:
+                        lobby.creator = next_creator
+                        lobby.save()
+                        lobby.participants.remove(request.user)
+                        messages.success(request, f'You left the lobby. {next_creator.username} is now the creator.')
+                        return redirect('main')
+                    else:
+                        lobby.delete()
+                        messages.success(request, 'Lobby deleted because there were no other participants.')
+                        return redirect('main')
+                else:
+                    lobby.participants.remove(request.user)
+                    messages.success(request, 'You have left the lobby.')
+                    return redirect('main')
+
         return render(request, 'lobby_detail.html', {'lobby': lobby})
     except Lobby.DoesNotExist:
         messages.error(request, 'Lobby does not exist.')

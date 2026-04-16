@@ -46,11 +46,11 @@
 <body>
     <h1>Find a Party</h1>
     <form class="input-container" method="get">
-        <input type="text" name="search_query" placeholder="Search by Party Name">
+        <input type="text" name="search_query" placeholder="Search by Party Name" value="{{ query|default_if_none:'' }}">
         <button type="submit">Find</button>
     </form>
-    {% if lobbies %} 
-    <h2>Search Results:</h2>
+    {% if lobbies %}
+    <h2>{% if query %}Search Results:{% else %}Available Lobbies:{% endif %}</h2>
     <ul style="list-style: none; padding: 0;">
         {% for lobby in lobbies %}
         <li style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 8px;">
@@ -67,6 +67,8 @@
         </li>
         {% endfor %}
     </ul>
+    {% else %}
+    <p style="color: #f5a623; margin-top: 20px;">No lobbies found.</p>
     {% endif %}
     <br>
     <a href="{% url 'main' %}" style="color: #f5a623;">Back to Main</a>
