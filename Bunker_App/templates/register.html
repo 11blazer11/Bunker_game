@@ -1,108 +1,18 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bunker Game - Register</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #333333);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            color: #fff;
-        }
+{% extends 'base.html' %}
 
-        .register-box {
-            background: rgba(0,0,0,0.85);
-            padding: 50px 40px;
-            border-radius: 15px;
-            width: 100%;
-            max-width: 350px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.6);
-            text-align: center;
-            margin: 0 20px;
-        }
-        
-        .register-box h2 {
-            margin-bottom: 25px;
-            font-size: 30px;
-            color: #f5a623;
-        }
+{% block title %}Register - Bunker{% endblock %}
 
-        input {
-            width: 100%;
-            padding: 12px 15px;
-            margin: 10px 0;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
+{% block unauth_content %}
+<div class="card" style="max-width: 560px; width: 100%; padding: 38px; margin: 0 auto;">
+    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; margin-bottom: 28px;">
+        <div>
+            <p style="margin: 0 0 10px; color: var(--accent); font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.85rem;">Join the bunker</p>
+            <h1 style="margin: 0; font-size: 2.4rem; line-height: 1.1;">Create account</h1>
+        </div>
+        <span style="background: rgba(245,166,35,0.14); color: var(--accent); padding: 10px 16px; border-radius: 18px; font-weight: 700;">Quick setup</span>
+    </div>
 
-        input:focus {
-            outline: none;
-            box-shadow: 0 0 8px #f5a623;
-        }
-
-        button {
-            width: 100%;
-            padding: 15px;
-            margin-top: 15px;
-            background-color: #4CAF50;
-            color: #fff;
-            font-size: 18px;
-            border: none;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-
-        button:hover {
-            background-color: #45a049;
-            transform: scale(1.05);
-        }
-
-        a {
-            display: block;
-            margin-top: 15px;
-            color: #f5a623;
-            text-decoration: none;
-        }
-
-        a:hover {
-            color: #fff;
-        }
-
-        .error-box {
-            background: #ffe6e6;
-            border: 1px solid #ff4d4d;
-            color: #cc0000;
-            padding: 12px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            text-align: left;
-            animation: shake 0.3s;
-        }
-
-        .error-box p {
-            margin: 5px 0;
-            font-size: 14px;
-        }
-
-        @keyframes shake {
-            0% { transform: translateX(-5px); }
-            50% { transform: translateX(5px); }
-            100% { transform: translateX(0); }
-        }
-    </style>
-</head>
-<body>
-
-<div class="register-box">
-    <h2>Create Account</h2>
+    <p style="margin: 0 0 24px; color: var(--text-muted);">Sign up and start connecting with friends in secure game lobbies.</p>
 
     {% load widget_tweaks %}
 
@@ -116,19 +26,18 @@
     </div>
     {% endif %}
 
-    <form method="POST" action="{% url 'register' %}">
+    <form method="POST" action="{% url 'register' %}" class="form-grid">
         {% csrf_token %}
-
         {{ form.username|attr:"placeholder:Username" }}
         {{ form.email|attr:"placeholder:Email" }}
         {{ form.password1|attr:"placeholder:Password" }}
         {{ form.password2|attr:"placeholder:Confirm Password" }}
-
-        <button type="submit">Register</button>
+        <button class="primary-button" type="submit">Register</button>
     </form>
 
-    <a href="{% url 'login' %}">Already have an account? Login</a>
+    <div class="inline-links" style="justify-content: space-between; margin-top: 24px; gap: 18px;">
+        <a href="{% url 'login' %}">Already have an account? Login</a>
+        <span class="text-muted">Email confirmation included.</span>
+    </div>
 </div>
-
-</body>
-</html>
+{% endblock %}

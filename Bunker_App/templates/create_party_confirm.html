@@ -1,85 +1,24 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Confirm Create Lobby - Bunker</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #151515;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            text-align: center;
-        }
-        .confirm-box {
-            width: 100%;
-            max-width: 520px;
-            background: rgba(0, 0, 0, 0.9);
-            border-radius: 18px;
-            padding: 36px;
-            box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-        }
-        h1 {
-            color: #f5a623;
-            margin-bottom: 18px;
-        }
-        p {
-            line-height: 1.6;
-            margin-bottom: 22px;
-        }
-        .lobby-summary {
-            background: rgba(255, 255, 255, 0.08);
-            border-radius: 14px;
-            padding: 18px;
-            text-align: left;
-            margin-bottom: 24px;
-        }
-        .button-row {
-            display: flex;
-            gap: 12px;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-        button, .cancel-link {
-            padding: 14px 24px;
-            border-radius: 10px;
-            border: none;
-            text-decoration: none;
-            font-weight: bold;
-            cursor: pointer;
-        }
-        button {
-            background: #f5a623;
-            color: #000;
-        }
-        .cancel-link {
-            background: #444;
-            color: #fff;
-        }
-    </style>
-</head>
-<body>
-    <div class="confirm-box">
-        <h1>Confirm Create New Lobby</h1>
-        <p>You already have an active lobby. Creating a new lobby will remove your current lobby.</p>
-        <div class="lobby-summary">
-            <strong>Current lobby:</strong><br>
-            {{ current_lobby.name }}<br>
-            Code: {{ current_lobby.code }}<br>
-            Creator: {{ current_lobby.creator.username }}
-        </div>
-        <p>{% if current_lobby.creator == user %}Because you are the creator, your current lobby will be deleted and a new one created.{% else %}You will leave your current lobby and join a new one as its creator.{% endif %}</p>
-        <div class="button-row">
-            <form method="post" style="display: inline-block;">
-                {% csrf_token %}
-                <button type="submit">Yes, create new lobby</button>
-            </form>
-            <a class="cancel-link" href="{% url 'main' %}">Cancel</a>
-        </div>
+{% extends 'base.html' %}
+
+{% block title %}Confirm Create Lobby - Bunker{% endblock %}
+{% block header %}Confirm New Lobby{% endblock %}
+{% block subtitle %}You already have an active lobby. Creating a new one will replace it.{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 640px; width: 100%; text-align: left;">
+    <p>You already have an active lobby. Creating a new lobby will remove your current lobby.</p>
+    <div class="small-card">
+        <strong>Current lobby:</strong>
+        <p>{{ current_lobby.name }}</p>
+        <p class="text-muted">Code: {{ current_lobby.code }} • Creator: {{ current_lobby.creator.username }}</p>
     </div>
-</body>
-</html>
+    <p>{% if current_lobby.creator == user %}Because you are the creator, your current lobby will be deleted and a new one created.{% else %}You will leave your current lobby and join a new one as its creator.{% endif %}</p>
+    <div class="button-row" style="margin-top: 24px;">
+        <form method="post" style="width: 100%;">
+            {% csrf_token %}
+            <button class="primary-button" type="submit">Yes, create new lobby</button>
+        </form>
+        <a class="secondary-button" href="{% url 'main' %}">Cancel</a>
+    </div>
+</div>
+{% endblock %}

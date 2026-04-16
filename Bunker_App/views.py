@@ -4,7 +4,7 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.signing import dumps, loads, BadSignature, SignatureExpired
 from .forms import CustomUserCreationForm
-from .models import Lobby, Friend
+from .models import Lobby, Friend, LobbyInvitation
 from .charachteristics import *
 from django.contrib import messages
 from .utils import login_required_message
@@ -119,7 +119,8 @@ def logout_view(request):
 @login_required_message
 def main_view(request):
     user_lobbies = request.user.joined_lobbies.all()
-    return render(request, 'main_page.html', {'user_lobbies': user_lobbies})
+    pending_invitations = LobbyInvitation.objects.filter(invitee=request.user, status='pending').select_related('lobby', 'inviter')
+    return render(request, 'main_page.html', {'user_lobbies': user_lobbies, 'pending_invitations': pending_invitations})
 
 
 @login_required_message
@@ -263,6 +264,11 @@ def lobby_detail_view(request, lobby_id):
             messages.error(request, 'You are not a participant in this lobby.')
             return redirect('main')
         
+        # Get friends list
+        friends = Friend.objects.filter(
+            (Q(from_user=request.user) | Q(to_user=request.user)) & Q(status='accepted')
+        ).select_related('from_user', 'to_user')
+        
         if request.method == 'POST':
             action = request.POST.get('action')
             if action == 'kick' and request.user == lobby.creator:
@@ -297,8 +303,107 @@ def lobby_detail_view(request, lobby_id):
                     lobby.participants.remove(request.user)
                     messages.success(request, 'You have left the lobby.')
                     return redirect('main')
-
-        return render(request, 'lobby_detail.html', {'lobby': lobby})
+        
+        return render(request, 'lobby_detail.html', {'lobby': lobby, 'friends': friends})
     except Lobby.DoesNotExist:
         messages.error(request, 'Lobby does not exist.')
         return redirect('main')
+
+
+@login_required_message
+def send_lobby_invitation_view(request, lobby_id):
+    """Send a lobby invitation to a friend"""
+    if request.method == 'POST':
+        try:
+            lobby = Lobby.objects.get(id=lobby_id)
+            if request.user not in lobby.participants.all():
+                messages.error(request, 'You are not a participant in this lobby.')
+                return redirect('main')
+            
+            friend_id = request.POST.get('friend_id')
+            try:
+                friend_user = User.objects.get(id=friend_id)
+                
+                # Check if they are friends
+                friendship = Friend.objects.filter(
+                    (Q(from_user=request.user, to_user=friend_user) | Q(from_user=friend_user, to_user=request.user))
+                    & Q(status='accepted')
+                ).first()
+                
+                if not friendship:
+                    messages.error(request, 'You can only invite accepted friends.')
+                    return redirect('lobby_detail', lobby_id=lobby_id)
+                
+                # Check if invitation already exists
+                existing = LobbyInvitation.objects.filter(
+                    lobby=lobby,
+                    invitee=friend_user,
+                    status='pending'
+                ).first()
+                
+                if existing:
+                    messages.warning(request, f'You have already sent an invitation to {friend_user.username}.')
+                    return redirect('lobby_detail', lobby_id=lobby_id)
+                
+                # Create invitation
+                LobbyInvitation.objects.create(
+                    lobby=lobby,
+                    inviter=request.user,
+                    invitee=friend_user
+                )
+                messages.success(request, f'Invitation sent to {friend_user.username}')
+                return redirect('lobby_detail', lobby_id=lobby_id)
+            except User.DoesNotExist:
+                messages.error(request, 'Friend not found.')
+                return redirect('lobby_detail', lobby_id=lobby_id)
+        except Lobby.DoesNotExist:
+            messages.error(request, 'Lobby does not exist.')
+            return redirect('main')
+    return redirect('lobby_detail', lobby_id=lobby_id)
+
+
+@login_required_message
+def accept_lobby_invitation_view(request, invitation_id):
+    """Accept a lobby invitation"""
+    try:
+        invitation = LobbyInvitation.objects.get(id=invitation_id, invitee=request.user, status='pending')
+        lobby = invitation.lobby
+        
+        # Check if lobby still exists and user is not already in another lobby
+        current_lobby = request.user.joined_lobbies.first()
+        
+        if current_lobby and current_lobby != lobby:
+            if current_lobby.creator == request.user:
+                current_lobby.delete()
+            else:
+                current_lobby.participants.remove(request.user)
+        
+        # Check if lobby is full
+        if lobby.participants.count() >= MAX_LOBBY_PARTICIPANTS:
+            messages.error(request, f'Lobby is full. Maximum {MAX_LOBBY_PARTICIPANTS} participants allowed.')
+            invitation.status = 'declined'
+            invitation.save()
+            return redirect('main')
+        
+        # Add user to lobby
+        lobby.participants.add(request.user)
+        invitation.status = 'accepted'
+        invitation.save()
+        messages.success(request, f'Joined lobby "{lobby.name}"')
+        return redirect('lobby_detail', lobby_id=lobby.id)
+    except LobbyInvitation.DoesNotExist:
+        messages.error(request, 'Invitation not found.')
+        return redirect('main')
+
+
+@login_required_message
+def decline_lobby_invitation_view(request, invitation_id):
+    """Decline a lobby invitation"""
+    try:
+        invitation = LobbyInvitation.objects.get(id=invitation_id, invitee=request.user, status='pending')
+        invitation.status = 'declined'
+        invitation.save()
+        messages.success(request, f'Declined invitation to {invitation.lobby.name}')
+    except LobbyInvitation.DoesNotExist:
+        messages.error(request, 'Invitation not found.')
+    return redirect('main')

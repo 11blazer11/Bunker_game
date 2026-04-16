@@ -1,115 +1,88 @@
-<!-- templates/lobby_detail.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>{{ lobby.name }} - Bunker</title>
-    <style>
-        body {
-            margin: 0; 
-            font-family: Arial, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            flex-direction: column;
-        }
-        .lobby-container {
-            background: rgba(0,0,0,0.8);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.6);
-            max-width: 600px;
-            width: 100%;
-        }
-        h1 {
-            color: #f5a623;
-            margin-bottom: 20px;
-        }
-        .code-display {
-            font-size: 24px;
-            background: #f5a623;
-            color: #000;
-            padding: 10px 20px;
-            border-radius: 8px;
-            display: inline-block;
-            margin: 20px 0;
-        }
-        .participants {
-            margin: 20px 0;
-        }
-        .participants ul {
-            list-style: none;
-            padding: 0;
-        }
-        .participants li {
-            background: rgba(255,255,255,0.1);
-            margin: 5px 0;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        a {
-            color: #f5a623;
-            text-decoration: none;
-            margin: 10px;
-        }
-        a:hover {
-            color: #fff;
-        }
-    </style>
-</head>
-<body>
-    <div class="lobby-container">
-        <h1>{{ lobby.name }}</h1>
-        <p>Created by: {{ lobby.creator.username }}</p>
-        <div class="code-display">Code: {{ lobby.code }}</div>
-        <p style="margin-top: 10px; color: #fff;">Participants: {{ lobby.participants.count }} / 9</p>
-        <div class="participants">
-            <h3>Participants:</h3>
-            <ul>
-                {% for participant in lobby.participants.all %}
-                <li>
-                    {{ participant.username }}
-                    {% if user == lobby.creator and participant != lobby.creator %}
-                    <form method="post" style="display: inline; margin-left: 10px;">
-                        {% csrf_token %}
-                        <input type="hidden" name="action" value="kick">
-                        <input type="hidden" name="user_id" value="{{ participant.id }}">
-                        <button type="submit" style="background: #f44336; color: #fff; border: none; padding: 5px 15px; border-radius: 4px; cursor: pointer;">Kick</button>
-                    </form>
+{% extends 'base.html' %}
+
+{% block title %}{{ lobby.name }} - Bunker{% endblock %}
+{% block header %}{{ lobby.name }}{% endblock %}
+{% block subtitle %}Lobby code {{ lobby.code }} • Created by {{ lobby.creator.username }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 720px; width: 100%;">
+    <div class="small-card" style="margin-bottom: 20px;">
+        <p><strong>Lobby Code:</strong> {{ lobby.code }}</p>
+        <p class="text-muted">Participants: {{ lobby.participants.count }} / 9</p>
+    </div>
+
+    <section>
+        <h3>Participants</h3>
+        <ul style="list-style: none; padding: 0; display: grid; gap: 12px; margin: 0;">
+            {% for participant in lobby.participants.all %}
+            <li style="background: rgba(255,255,255,0.04); padding: 16px 18px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
+                <span>{{ participant.username }}</span>
+                {% if user == lobby.creator and participant != lobby.creator %}
+                <form method="post" style="margin: 0;">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="kick">
+                    <input type="hidden" name="user_id" value="{{ participant.id }}">
+                    <button class="secondary-button" type="submit" style="padding: 10px 16px;">Kick</button>
+                </form>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
+    </section>
+
+    {% if user in lobby.participants.all and friends %}
+    <section style="margin-top: 24px;">
+        <h3>Invite Friends</h3>
+        <div style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
+            {% for friend in friends %}
+                {% with friend_user=friend.to_user|default:friend.from_user %}
+                    {% if friend.from_user == user %}
+                        {% with friend_user=friend.to_user %}
+                            {% if friend_user not in lobby.participants.all %}
+                            <form method="post" action="{% url 'send_lobby_invitation' lobby.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="friend_id" value="{{ friend_user.id }}">
+                                <button class="secondary-button" type="submit" style="width: 100%; padding: 10px;">{{ friend_user.username }}</button>
+                            </form>
+                            {% endif %}
+                        {% endwith %}
+                    {% else %}
+                        {% with friend_user=friend.from_user %}
+                            {% if friend_user not in lobby.participants.all %}
+                            <form method="post" action="{% url 'send_lobby_invitation' lobby.id %}" style="display: inline;">
+                                {% csrf_token %}
+                                <input type="hidden" name="friend_id" value="{{ friend_user.id }}">
+                                <button class="secondary-button" type="submit" style="width: 100%; padding: 10px;">{{ friend_user.username }}</button>
+                            </form>
+                            {% endif %}
+                        {% endwith %}
                     {% endif %}
-                </li>
-                {% endfor %}
-            </ul>
+                {% endwith %}
+            {% endfor %}
         </div>
+    </section>
+    {% endif %}
+
+    <div class="button-row" style="margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
         {% if user == lobby.creator %}
-        <div style="margin-top: 30px; display: flex; justify-content: center; gap: 10px; flex-wrap: wrap;">
-            <form method="post" style="display: inline-block;">
+            <form method="post" style="width: 100%;">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="leave">
-                <button type="submit" style="background: #555; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">Leave Lobby</button>
+                <button class="secondary-button" type="submit">Leave Lobby</button>
             </form>
-            <form method="post" style="display: inline-block;">
+            <form method="post" style="width: 100%;">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="delete">
-                <button type="submit" style="background: #d32f2f; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">Delete Lobby</button>
+                <button class="primary-button" type="submit">Delete Lobby</button>
             </form>
-        </div>
         {% elif user in lobby.participants.all %}
-        <div style="margin-top: 30px;">
-            <form method="post">
+            <form method="post" style="width: 100%;">
                 {% csrf_token %}
                 <input type="hidden" name="action" value="leave">
-                <button type="submit" style="background: #555; color: #fff; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer;">Leave Lobby</button>
+                <button class="secondary-button" type="submit">Leave Lobby</button>
             </form>
-        </div>
         {% endif %}
-        <div style="margin-top: 30px;">
-            <a href="{% url 'main' %}" style="display: inline-block; color: #f5a623;">Back to Main</a>
-        </div>
+        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
     </div>
-</body>
-</html>
+</div>
+{% endblock %}

@@ -1,165 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Bunker Game - Main Lobby</title>
-    <style>
-        /* General Body */
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #333333);
-            color: #fff;
-        }
+{% extends 'base.html' %}
 
-        /* Navbar */
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 40px;
-            background-color: #111;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+{% block title %}Dashboard - Bunker{% endblock %}
+{% block header %}Welcome, {{ request.user.username }}{% endblock %}
+{% block subtitle %}Your command center for joining and creating game lobbies.{% endblock %}
 
-        .navbar h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #f5a623;
-            letter-spacing: 1px;
-        }
-
-        .navbar .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .navbar .nav-right span {
-            font-weight: bold;
-            color: #f5a623;
-        }
-
-        .navbar .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .navbar .nav-right a {
-            padding: 8px 16px;
-            background-color: #f44336;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: 0.3s;
-        }
-
-        .navbar .nav-right a:hover {
-            background-color: #d32f2f;
-        }
-
-        .navbar .nav-right .account-link {
-            background: none;
-            color: #f5a623;
-            padding: 0;
-        }
-
-        .navbar .nav-right .account-link:hover {
-            color: #fff;
-        }
-
-        /* Main Content Box */
-        .main-box {
-            max-width: 500px;
-            margin: 80px auto;
-            background-color: rgba(0,0,0,0.8);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.6);
-        }
-
-        .main-box h2 {
-            font-size: 32px;
-            margin-bottom: 30px;
-            color: #f5a623;
-        }
-
-        /* Game Buttons */
-        .button-container {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .game-button {
-            padding: 20px;
-            font-size: 22px;
-            background-color: #f44336;
-            border: none;
-            border-radius: 12px;
-            color: #fff;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-        }
-
-        .game-button:hover {
-            background-color: #d32f2f;
-            transform: scale(1.05);
-        }
-
-        /* Responsive */
-        @media(max-width: 600px) {
-            .main-box {
-                margin: 40px 20px;
-                padding: 30px;
-            }
-            .game-button {
-                font-size: 20px;
-                padding: 15px;
-            }
-        }
-
-    </style>
-</head>
-<body>
-
-    <!-- Navbar -->
-    <div class="navbar">
-        <h1>Bunker</h1>
-        <div class="nav-right">
-            <span>{{ request.user.username }}</span>
-            <a href="{% url 'account' %}" class="account-link" style="margin-left: 10px; text-decoration: none; font-size: 20px;">&#128100;</a>
-            <a href="{% url 'friends' %}">Friends</a>
-            <a href="{% url 'logout' %}">Logout</a>
+{% block content %}
+<div style="display: grid; gap: 20px; grid-template-columns: minmax(0, 1.5fr) minmax(280px, 1fr);">
+    <section class="card">
+        <h2>Lobby Actions</h2>
+        <div class="button-panel">
+            <a class="primary-button" href="{% url 'join_party' %}">Join Party</a>
+            <a class="primary-button" href="{% url 'create_party' %}">Create Party</a>
+            <a class="primary-button" href="{% url 'find_party' %}">Find Party</a>
         </div>
-    </div>
 
-    <!-- Main Lobby -->
-    <div class="main-box">
-        <h2>Welcome to Bunker Online</h2>
-        {% if user_lobbies %}
-        <h3>Your Lobbies:</h3>
-        <ul style="list-style: none; padding: 0; margin-bottom: 30px;">
-            {% for lobby in user_lobbies %}
-            <li style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 8px;">
-                <strong>{{ lobby.name }}</strong> (Code: {{ lobby.code }})
-                <a href="{% url 'lobby_detail' lobby.id %}" style="color: #f5a623; margin-left: 10px;">View</a>
-            </li>
-            {% endfor %}
-        </ul>
+        {% if pending_invitations %}
+        <section class="small-card" style="margin-top: 24px;">
+            <h3>Lobby Invitations</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;">
+                {% for invitation in pending_invitations %}
+                <li style="background: rgba(245,166,35,0.12); border: 1px solid rgba(245,166,35,0.2); padding: 14px 16px; border-radius: 18px;">
+                    <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                        <div>
+                            <p style="margin: 0; font-weight: 700;">{{ invitation.lobby.name }}</p>
+                            <p class="text-muted" style="margin: 6px 0 0; font-size: 0.9rem;">From {{ invitation.inviter.username }}</p>
+                        </div>
+                        <div style="display: flex; gap: 8px;">
+                            <a class="secondary-button" href="{% url 'accept_lobby_invitation' invitation.id %}" style="padding: 8px 12px; font-size: 0.9rem;">Accept</a>
+                            <a class="secondary-button" href="{% url 'decline_lobby_invitation' invitation.id %}" style="padding: 8px 12px; font-size: 0.9rem;">Decline</a>
+                        </div>
+                    </div>
+                </li>
+                {% endfor %}
+            </ul>
+        </section>
         {% endif %}
-        <div class="button-container">
-            <a href="{% url 'join_party' %}" class="game-button">Join Party</a>
-            <a href="{% url 'create_party' %}" class="game-button">Create Party</a>
-            <a href="{% url 'find_party' %}" class="game-button">Find Party</a>
-        </div>
-    </div>
 
-</body>
-</html>
+        <section class="small-card" style="margin-top: 24px;">
+            <h3>Your Lobbies</h3>
+            {% if user_lobbies %}
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 14px;">
+                {% for lobby in user_lobbies %}
+                <li class="small-card" style="padding: 18px;">
+                    <strong>{{ lobby.name }}</strong>
+                    <p class="text-muted" style="margin: 10px 0 0;">Code {{ lobby.code }} • Creator {{ lobby.creator.username }}</p>
+                    <a class="secondary-button" href="{% url 'lobby_detail' lobby.id %}" style="margin-top: 14px; display: inline-block;">View Lobby</a>
+                </li>
+                {% endfor %}
+            </ul>
+            {% else %}
+            <div class="notice" style="margin-top: 12px;">
+                You currently have no active lobbies. Create one to start inviting friends.
+            </div>
+            {% endif %}
+        </section>
+    </section>
+
+    <section class="card">
+        <h2>Quick Summary</h2>
+        <div class="small-card">
+            <p>Use these controls to manage your current lobbies and explore new ones.</p>
+        </div>
+        <div class="small-card" style="margin-top: 20px;">
+            <h3>Daily Tasks</h3>
+            <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 10px;">
+                <li>Join a party <span class="text-muted">+20 XP</span></li>
+                <li>Create a lobby <span class="text-muted">+15 XP</span></li>
+                <li>Invite a friend <span class="text-muted">+25 XP</span></li>
+            </ul>
+        </div>
+    </section>
+</div>
+{% endblock %}

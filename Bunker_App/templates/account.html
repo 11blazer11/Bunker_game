@@ -1,143 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Account - Bunker</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(135deg, #1a1a1a, #333333);
-            color: #fff;
-        }
+{% extends 'base.html' %}
 
-        .navbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 40px;
-            background-color: #111;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
+{% block title %}Account - Bunker{% endblock %}
+{% block header %}Your Account{% endblock %}
+{% block subtitle %}View your profile details and account information.{% endblock %}
 
-        .navbar h1 {
-            margin: 0;
-            font-size: 24px;
-            color: #f5a623;
-            letter-spacing: 1px;
-        }
-
-        .navbar .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .navbar .nav-right span {
-            font-weight: bold;
-            color: #f5a623;
-        }
-
-        .navbar .nav-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-
-        .navbar .nav-right span {
-            font-weight: bold;
-            color: #f5a623;
-        }
-
-        .navbar .nav-right a {
-            padding: 8px 16px;
-            background-color: #f44336;
-            color: #fff;
-            text-decoration: none;
-            border-radius: 6px;
-            transition: 0.3s;
-        }
-
-        .navbar .nav-right a:hover {
-            background-color: #d32f2f;
-        }
-
-        .navbar .nav-right .account-link {
-            background: none;
-            color: #f5a623;
-            padding: 0;
-        }
-
-        .navbar .nav-right .account-link:hover {
-            color: #fff;
-        }
-
-        .account-container {
-            max-width: 600px;
-            margin: 80px auto;
-            background-color: rgba(0,0,0,0.8);
-            padding: 40px;
-            border-radius: 15px;
-            text-align: center;
-            box-shadow: 0 0 20px rgba(0,0,0,0.6);
-        }
-
-        .account-container h2 {
-            color: #f5a623;
-            margin-bottom: 20px;
-        }
-
-        .account-info {
-            text-align: left;
-            background: rgba(255,255,255,0.1);
-            padding: 20px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-        }
-
-        .account-info p {
-            margin: 10px 0;
-        }
-
-        .back-link {
-            display: inline-block;
-            margin-top: 20px;
-            color: #f5a623;
-            text-decoration: none;
-        }
-
-        .back-link:hover {
-            color: #fff;
-        }
-    </style>
-</head>
-<body>
-
-    <!-- Navbar -->
-    <div class="navbar">
-        <h1>Bunker</h1>
-        <div class="nav-right">
-            <span>{{ request.user.username }}</span>
-            <a href="{% url 'account' %}" class="account-link" style="margin-left: 10px; text-decoration: none; font-size: 20px;">&#128100;</a>
-            <a href="{% url 'friends' %}">Friends</a>
-            <a href="{% url 'logout' %}">Logout</a>
-        </div>
+{% block content %}
+<div class="card">
+    <div class="account-info">
+        <p><strong>Username:</strong> {{ request.user.username }}</p>
+        <p><strong>Email:</strong> {{ request.user.email }}</p>
+        <p><strong>ID:</strong> {{ request.user.id }}</p>
+        <p><strong>Name:</strong> {{ request.user.profile.name|default:"Not set" }}</p>
     </div>
-
-    <!-- Account Info -->
-    <div class="account-container">
-        <h2>Your Account</h2>
-        <div class="account-info">
-            <p><strong>Username:</strong> {{ request.user.username }}</p>
-            <p><strong>Email:</strong> {{ request.user.email }}</p>
-            <p><strong>ID:</strong> {{ request.user.id }}</p>
-            <p><strong>Name:</strong> {{ request.user.profile.name|default:"Not set" }}</p>
-        </div>
-        <a href="{% url 'main' %}" class="back-link">Back to Main</a>
+    <div class="button-row" style="margin-top: 20px;">
+        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
     </div>
-
-</body>
-</html>
+</div>
+{% endblock %}

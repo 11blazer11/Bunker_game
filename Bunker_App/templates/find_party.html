@@ -1,76 +1,46 @@
-<!-- templates/find_party.html -->
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Find Party - Bunker</title>
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: #1a1a1a;
-            color: #fff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            flex-direction: column;
-        }
-        h1 {
-            margin-bottom: 30px;
-            color: #f5a623;
-        }
-        .input-container {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            width: 300px;
-        }
-        input, button {
-            padding: 15px;
-            font-size: 18px;
-            border-radius: 8px;
-            border: none;
-        }
-        button {
-            background-color: #f5a623;
-            color: #000;
-            cursor: pointer;
-            transition: 0.3s;
-        }
-        button:hover {
-            background-color: #fff;
-        }
-    </style>
-</head>
-<body>
-    <h1>Find a Party</h1>
-    <form class="input-container" method="get">
+{% extends 'base.html' %}
+
+{% block title %}Find Party - Bunker{% endblock %}
+{% block header %}Find a Party{% endblock %}
+{% block subtitle %}Browse available lobbies or search by name.{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 720px; width: 100%;">
+    <form method="get" class="form-grid">
         <input type="text" name="search_query" placeholder="Search by Party Name" value="{{ query|default_if_none:'' }}">
-        <button type="submit">Find</button>
+        <button class="primary-button" type="submit">Find</button>
     </form>
+
     {% if lobbies %}
-    <h2>{% if query %}Search Results:{% else %}Available Lobbies:{% endif %}</h2>
-    <ul style="list-style: none; padding: 0;">
-        {% for lobby in lobbies %}
-        <li style="background: rgba(255,255,255,0.1); margin: 10px 0; padding: 10px; border-radius: 8px;">
-            <strong>{{ lobby.name }}</strong> (Code: {{ lobby.code }}, Creator: {{ lobby.creator.username }})
-            {% if user not in lobby.participants.all %}
-            <form method="post" action="{% url 'join_party' %}" style="display: inline;">
-                {% csrf_token %}
-                <input type="hidden" name="party_code" value="{{ lobby.code }}">
-                <button type="submit" style="background: #f5a623; color: #000; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">Join</button>
-            </form>
-            {% else %}
-            <a href="{% url 'lobby_detail' lobby.id %}" style="color: #f5a623;">View Lobby</a>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+    <div class="small-card" style="margin-top: 20px;">
+        <h3>{% if query %}Search Results{% else %}Available Lobbies{% endif %}</h3>
+        <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 12px;">
+            {% for lobby in lobbies %}
+            <li style="background: rgba(255,255,255,0.04); padding: 18px; border-radius: 20px; display: grid; gap: 10px;">
+                <div>
+                    <strong>{{ lobby.name }}</strong>
+                    <p class="text-muted" style="margin: 6px 0 0;">Code: {{ lobby.code }} • Creator: {{ lobby.creator.username }}</p>
+                </div>
+                <div class="button-row" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
+                    {% if user not in lobby.participants.all %}
+                    <form method="post" action="{% url 'join_party' %}" style="width: 100%;">
+                        {% csrf_token %}
+                        <input type="hidden" name="party_code" value="{{ lobby.code }}">
+                        <button class="secondary-button" type="submit" style="width: 100%;">Join</button>
+                    </form>
+                    {% endif %}
+                    <a class="secondary-button" href="{% url 'lobby_detail' lobby.id %}">View</a>
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
     {% else %}
-    <p style="color: #f5a623; margin-top: 20px;">No lobbies found.</p>
+    <div class="notice" style="margin-top: 20px;">No lobbies found.</div>
     {% endif %}
-    <br>
-    <a href="{% url 'main' %}" style="color: #f5a623;">Back to Main</a>
-</body>
-</html>
+
+    <div class="button-row" style="margin-top: 24px;">
+        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
+    </div>
+</div>
+{% endblock %}

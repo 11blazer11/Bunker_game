@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>{% block title %}Bunker Game{% endblock %}</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #0b0f19;
+            --surface: rgba(16, 22, 39, 0.98);
+            --surface-strong: rgba(255, 255, 255, 0.05);
+            --text: #f1f3f6;
+            --text-muted: #9aa4c8;
+            --accent: #f5a623;
+            --accent-strong: #f44336;
+            --border: rgba(255,255,255,0.08);
+            --shadow: 0 24px 60px rgba(0,0,0,0.28);
+            --radius: 24px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        @keyframes buttonHover {
+            from {
+                transform: translateY(0);
+                box-shadow: 0 4px 12px rgba(245,166,35,0.1);
+            }
+            to {
+                transform: translateY(-3px);
+                box-shadow: 0 8px 24px rgba(245,166,35,0.2);
+            }
+        }
+
+        @keyframes buttonPulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(245,166,35,0.7);
+            }
+            70% {
+                box-shadow: 0 0 0 8px rgba(245,166,35,0);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(245,166,35,0);
+            }
+        }
+
+        @keyframes sidebarButtonGlow {
+            0%, 100% {
+                background: rgba(255,255,255,0.03);
+            }
+            50% {
+                background: rgba(255,255,255,0.06);
+            }
+        }
+
+        @keyframes primaryButtonGlow {
+            0%, 100% {
+                box-shadow: 0 4px 12px rgba(239,83,80,0.2);
+            }
+            50% {
+                box-shadow: 0 4px 20px rgba(239,83,80,0.4);
+            }
+        }
+
+        html, body {
+            margin: 0;
+            min-height: 100%;
+            font-family: 'Segoe UI', sans-serif;
+            background: radial-gradient(circle at top left, rgba(53,116,255,0.16), transparent 25%),
+                        radial-gradient(circle at bottom right, rgba(245,166,35,0.12), transparent 20%),
+                        var(--bg);
+            color: var(--text);
+        }
+
+        body {
+            line-height: 1.6;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        button,
+        .button {
+            appearance: none;
+            border: none;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: transform 0.2s ease, background-color 0.2s ease, box-shadow 0.3s ease;
+            font: inherit;
+        }
+
+        button:hover,
+        .button:hover {
+            animation: buttonHover 0.3s ease forwards;
+        }
+
+        button:active,
+        .button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        button:focus,
+        .button:focus {
+            outline: none;
+            animation: buttonPulse 0.6s ease-out;
+        }
+
+        .site-shell {
+            display: grid;
+            min-height: 100vh;
+            grid-template-columns: minmax(80px, 100px) minmax(0, 1fr);
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 14px;
+            padding: 22px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .brand {
+            font-size: 18px;
+            letter-spacing: 0.2em;
+            font-weight: 800;
+            text-transform: uppercase;
+            color: var(--accent);
+        }
+
+        .sidebar a,
+        .sidebar button {
+            width: 100%;
+            padding: 14px 0;
+            display: grid;
+            place-items: center;
+            background: rgba(255,255,255,0.03);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            border-radius: 16px;
+        }
+
+        .sidebar a.active,
+        .sidebar button.active {
+            background: rgba(245,166,35,0.16);
+            color: var(--accent);
+            box-shadow: 0 0 12px rgba(245,166,35,0.15);
+        }
+
+        .sidebar a:hover,
+        .sidebar button:hover {
+            background: rgba(255,255,255,0.06);
+            animation: buttonHover 0.3s ease forwards;
+            color: var(--text);
+        }
+
+        .sidebar a.active:hover,
+        .sidebar button.active:hover {
+            animation: buttonHover 0.3s ease forwards;
+            box-shadow: 0 0 16px rgba(245,166,35,0.25);
+        }
+
+        .content-shell {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 24px;
+            box-shadow: var(--shadow);
+        }
+
+        .top-bar h1 {
+            margin: 0;
+            font-size: 24px;
+        }
+
+        .top-bar p {
+            margin: 6px 0 0;
+            color: var(--text-muted);
+        }
+
+        .account-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            color: var(--accent);
+        }
+
+        .account-row span {
+            font-weight: 700;
+        }
+
+        .page-content {
+            display: grid;
+            gap: 20px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 28px;
+            padding: 28px;
+            box-shadow: var(--shadow);
+        }
+
+        .card h2,
+        .card h3 {
+            margin-top: 0;
+            color: var(--accent);
+        }
+
+        .button-panel {
+            display: grid;
+            gap: 18px;
+        }
+
+        .primary-button {
+            background: linear-gradient(135deg, #ef5350, #d32f2f);
+            color: #fff;
+            padding: 18px 0;
+            text-align: center;
+            border-radius: 20px;
+            font-size: 16px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(239,83,80,0.2);
+        }
+
+        .primary-button:hover {
+            animation: buttonHover 0.3s ease forwards, primaryButtonGlow 0.6s ease;
+            box-shadow: 0 4px 20px rgba(239,83,80,0.4);
+        }
+
+        .primary-button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .secondary-button {
+            background: rgba(245,166,35,0.12);
+            color: var(--accent);
+            padding: 16px 0;
+            text-align: center;
+            border-radius: 20px;
+            font-size: 15px;
+            font-weight: 700;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(245,166,35,0.1);
+        }
+
+        .secondary-button:hover {
+            animation: buttonHover 0.3s ease forwards;
+            box-shadow: 0 4px 16px rgba(245,166,35,0.2);
+            background: rgba(245,166,35,0.18);
+        }
+
+        .secondary-button:active {
+            transform: translateY(-1px) scale(0.98);
+        }
+
+        .button-row {
+            display: grid;
+            gap: 12px;
+        }
+
+        .text-muted {
+            color: var(--text-muted);
+        }
+
+        .form-grid {
+            display: grid;
+            gap: 16px;
+        }
+
+        input,
+        select,
+        textarea {
+            width: 100%;
+            padding: 14px 16px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.04);
+            color: var(--text);
+            font: inherit;
+        }
+
+        input:focus,
+        select:focus,
+        textarea:focus {
+            outline: none;
+            border-color: rgba(245,166,35,0.7);
+            box-shadow: 0 0 0 4px rgba(245,166,35,0.12);
+        }
+
+        .small-card {
+            background: rgba(255,255,255,0.04);
+            border-radius: 22px;
+            padding: 18px 22px;
+            border: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .inline-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .inline-links a {
+            color: var(--accent);
+        }
+
+        .notice {
+            background: rgba(245,166,35,0.12);
+            border: 1px solid rgba(245,166,35,0.2);
+            color: var(--text);
+            border-radius: 18px;
+            padding: 18px 22px;
+        }
+
+        .error-box,
+        .success-box {
+            border-radius: 16px;
+            padding: 16px 18px;
+            font-size: 14px;
+        }
+
+        .error-box {
+            background: rgba(255, 77, 77, 0.12);
+            border: 1px solid rgba(255, 77, 77, 0.3);
+            color: #ffb3b3;
+        }
+
+        .success-box {
+            background: rgba(76, 175, 80, 0.12);
+            border: 1px solid rgba(76, 175, 80, 0.25);
+            color: #dcf8dc;
+        }
+
+        .page-center {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: calc(100vh - 40px);
+            padding: 20px;
+        }
+
+        @media (max-width: 1024px) {
+            .site-shell {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                flex-direction: row;
+                justify-content: center;
+                flex-wrap: wrap;
+                padding: 16px;
+            }
+
+            .content-shell {
+                gap: 16px;
+            }
+
+            .top-bar {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .page-center {
+                min-height: auto;
+                padding: 12px;
+            }
+
+            .top-bar {
+                padding: 18px;
+            }
+
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    {% if request.user.is_authenticated %}
+    <div class="site-shell">
+        <aside class="sidebar">
+            <div class="brand">BUNKER</div>
+            <a href="{% url 'main' %}" class="active">Home</a>
+            <a href="{% url 'friends' %}">Friends</a>
+            <a href="{% url 'account' %}">&#128100;</a>
+            <a href="{% url 'logout' %}">Logout</a>
+        </aside>
+        <div class="content-shell">
+            <div class="top-bar">
+                <div>
+                    <h1>{% block header %}Bunker Dashboard{% endblock %}</h1>
+                    <p>{% block subtitle %}Manage your lobbies, friends, and game rooms in one place.{% endblock %}</p>
+                </div>
+                <div class="account-row">
+                    <span>{{ request.user.username }}</span>
+                    <a href="{% url 'account' %}">&#128100;</a>
+                </div>
+            </div>
+            <main class="page-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    <main class="page-content page-center">
+        {% block unauth_content %}{% endblock %}
+    </main>
+    {% endif %}
+</body>
+</html>
