@@ -1,46 +1,95 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Find Party — PartyUp{% endblock %}
 
-{% block title %}Find Party - Bunker{% endblock %}
-{% block header %}Find a Party{% endblock %}
-{% block subtitle %}Browse available lobbies or search by name.{% endblock %}
+{% block extra_head %}
+<style>
+  .search-bar {
+    display: flex; gap: .6rem;
+    margin-bottom: 1.75rem;
+  }
+  .search-bar input { flex: 1; }
+
+  .lobby-row {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.1rem 1.4rem;
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem;
+    transition: border-color .2s, transform .15s;
+  }
+  .lobby-row:hover { border-color: var(--gold); transform: translateX(3px); }
+  .lobby-row-info { flex: 1; min-width: 0; }
+  .lobby-row-name {
+    font-family: var(--font-head); font-size: 1.15rem; font-weight: 700;
+    letter-spacing: .04em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .lobby-row-meta { font-size: .82rem; color: var(--muted); display: flex; gap: .75rem; margin-top: .2rem; flex-wrap: wrap; }
+
+  .fill-bar {
+    height: 4px; background: var(--border); border-radius: 99px; margin-top: .5rem; overflow: hidden;
+  }
+  .fill-bar-inner { height: 100%; border-radius: 99px; background: var(--gold); }
+
+  .lobbies-list { display: flex; flex-direction: column; gap: .6rem; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 720px; width: 100%;">
-    <form method="get" class="form-grid">
-        <input type="text" name="search_query" placeholder="Search by Party Name" value="{{ query|default_if_none:'' }}">
-        <button class="primary-button" type="submit">Find</button>
-    </form>
-
-    {% if lobbies %}
-    <div class="small-card" style="margin-top: 20px;">
-        <h3>{% if query %}Search Results{% else %}Available Lobbies{% endif %}</h3>
-        <ul style="list-style: none; padding: 0; margin: 0; display: grid; gap: 12px;">
-            {% for lobby in lobbies %}
-            <li style="background: rgba(255,255,255,0.04); padding: 18px; border-radius: 20px; display: grid; gap: 10px;">
-                <div>
-                    <strong>{{ lobby.name }}</strong>
-                    <p class="text-muted" style="margin: 6px 0 0;">Code: {{ lobby.code }} • Creator: {{ lobby.creator.username }}</p>
-                </div>
-                <div class="button-row" style="grid-template-columns: repeat(2, minmax(0, 1fr));">
-                    {% if user not in lobby.participants.all %}
-                    <form method="post" action="{% url 'join_party' %}" style="width: 100%;">
-                        {% csrf_token %}
-                        <input type="hidden" name="party_code" value="{{ lobby.code }}">
-                        <button class="secondary-button" type="submit" style="width: 100%;">Join</button>
-                    </form>
-                    {% endif %}
-                    <a class="secondary-button" href="{% url 'lobby_detail' lobby.id %}">View</a>
-                </div>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
-    {% else %}
-    <div class="notice" style="margin-top: 20px;">No lobbies found.</div>
-    {% endif %}
-
-    <div class="button-row" style="margin-top: 24px;">
-        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
-    </div>
+<div class="page-header anim">
+  <div>
+    <h1>Find a Party</h1>
+    <p class="subtitle">Browse open lobbies</p>
+  </div>
 </div>
+
+<form method="GET" action="{% url 'find_party' %}" class="search-bar anim anim-d1">
+  <input type="text" name="search_query" placeholder="Search by lobby name…"
+    value="{{ query|default_if_none:'' }}" />
+  <button type="submit" class="btn btn-primary">Search</button>
+  {% if query %}<a href="{% url 'find_party' %}" class="btn btn-outline">Clear</a>{% endif %}
+</form>
+
+{% if lobbies %}
+<div class="lobbies-list anim anim-d2">
+  {% for lobby in lobbies %}
+  <div class="lobby-row">
+    <div class="lobby-row-info">
+      <div class="lobby-row-name">{{ lobby.name }}</div>
+      <div class="lobby-row-meta">
+        <span>Host: {{ lobby.creator.username }}</span>
+        <span>{{ lobby.participants.count }}/9 players</span>
+        <span>Code: <strong style="color:var(--text)">{{ lobby.code }}</strong></span>
+      </div>
+      <div class="fill-bar">
+        <div class="fill-bar-inner" style="width: {% widthratio lobby.participants.count 9 100 %}%;"></div>
+      </div>
+    </div>
+    <div style="flex-shrink:0;">
+      {% if lobby.participants.count < 9 %}
+      <form method="POST" action="{% url 'join_party' %}">
+        {% csrf_token %}
+        <input type="hidden" name="party_code" value="{{ lobby.code }}" />
+        <button type="submit" class="btn btn-primary btn-sm">Join</button>
+      </form>
+      {% else %}
+        <span class="badge badge-muted">Full</span>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="card anim anim-d2">
+  <div class="empty">
+    <div class="empty-icon">🔍</div>
+    {% if query %}
+      <p>No lobbies match "{{ query }}"</p>
+      <a href="{% url 'find_party' %}" class="btn btn-outline" style="margin-top:.9rem;">Clear Search</a>
+    {% else %}
+      <p>No open lobbies at the moment.</p>
+      <a href="{% url 'create_party' %}" class="btn btn-primary" style="margin-top:.9rem;">Create One</a>
+    {% endif %}
+  </div>
+</div>
+{% endif %}
 {% endblock %}

@@ -1,31 +1,28 @@
-{% extends 'base.html' %}
-
-{% block title %}Confirm Lobby Change - Bunker{% endblock %}
-{% block header %}Confirm Lobby Switch{% endblock %}
-{% block subtitle %}Joining the new lobby will replace your current session.{% endblock %}
+{% extends "base.html" %}
+{% block title %}Switch Party? — PartyUp{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 640px; width: 100%;">
-    <p>You already have a lobby:</p>
-    <div class="small-card">
-        <strong>Current lobby:</strong>
-        <p>{{ current_lobby.name }}</p>
-        <p class="text-muted">Code: {{ current_lobby.code }}</p>
+<div style="max-width:480px; margin:0 auto;">
+  <div class="page-header anim" style="flex-direction:column; text-align:center; justify-content:center;">
+    <h1 style="font-size:2rem;">Switch Party?</h1>
+    <p class="subtitle">You're already in a lobby</p>
+  </div>
+
+  <div class="card anim anim-d1" style="text-align:center;">
+    <p style="color:var(--muted); margin-bottom:1.4rem;">
+      You're currently in <strong style="color:var(--text)">{{ current_lobby.name }}</strong>. 
+      Joining <strong style="color:var(--gold)">{{ new_lobby.name }}</strong> will remove you from your current party.
+    </p>
+
+    <div style="display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap;">
+      <form method="POST" action="{% url 'join_party' %}">
+        {% csrf_token %}
+        <input type="hidden" name="party_code" value="{{ party_code }}" />
+        <input type="hidden" name="confirm" value="true" />
+        <button type="submit" class="btn btn-primary">Yes, Switch</button>
+      </form>
+      <a href="{% url 'main' %}" class="btn btn-outline">Cancel</a>
     </div>
-    <p>If you join this new lobby, your current lobby will be removed.</p>
-    <div class="small-card">
-        <strong>New lobby:</strong>
-        <p>{{ new_lobby.name }}</p>
-        <p class="text-muted">Code: {{ new_lobby.code }}</p>
-    </div>
-    <div class="button-row" style="margin-top: 24px;">
-        <form method="post" style="width: 100%; max-width: 320px;">
-            {% csrf_token %}
-            <input type="hidden" name="party_code" value="{{ party_code }}">
-            <input type="hidden" name="confirm" value="true">
-            <button class="primary-button" type="submit">Yes, join new lobby</button>
-        </form>
-        <a class="secondary-button" href="{% url 'join_party' %}">Cancel</a>
-    </div>
+  </div>
 </div>
 {% endblock %}

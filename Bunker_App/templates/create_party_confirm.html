@@ -1,24 +1,26 @@
-{% extends 'base.html' %}
-
-{% block title %}Confirm Create Lobby - Bunker{% endblock %}
-{% block header %}Confirm New Lobby{% endblock %}
-{% block subtitle %}You already have an active lobby. Creating a new one will replace it.{% endblock %}
+{% extends "base.html" %}
+{% block title %}Create Party — PartyUp{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 640px; width: 100%; text-align: left;">
-    <p>You already have an active lobby. Creating a new lobby will remove your current lobby.</p>
-    <div class="small-card">
-        <strong>Current lobby:</strong>
-        <p>{{ current_lobby.name }}</p>
-        <p class="text-muted">Code: {{ current_lobby.code }} • Creator: {{ current_lobby.creator.username }}</p>
+<div style="max-width:480px; margin:0 auto;">
+  <div class="page-header anim" style="flex-direction:column; text-align:center; justify-content:center;">
+    <h1 style="font-size:2rem;">Leave & Create?</h1>
+    <p class="subtitle">You're already in a party</p>
+  </div>
+
+  <div class="card anim anim-d1" style="text-align:center;">
+    <p style="color:var(--muted); margin-bottom:1.4rem;">
+      You're currently in <strong style="color:var(--text)">{{ current_lobby.name }}</strong>. 
+      Creating a new lobby will remove you from your current party.
+    </p>
+
+    <div style="display:flex; gap:.75rem; justify-content:center; flex-wrap:wrap;">
+      <form method="POST" action="{% url 'create_party' %}">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-primary">Yes, Create New Party</button>
+      </form>
+      <a href="{% url 'main' %}" class="btn btn-outline">Cancel</a>
     </div>
-    <p>{% if current_lobby.creator == user %}Because you are the creator, your current lobby will be deleted and a new one created.{% else %}You will leave your current lobby and join a new one as its creator.{% endif %}</p>
-    <div class="button-row" style="margin-top: 24px;">
-        <form method="post" style="width: 100%;">
-            {% csrf_token %}
-            <button class="primary-button" type="submit">Yes, create new lobby</button>
-        </form>
-        <a class="secondary-button" href="{% url 'main' %}">Cancel</a>
-    </div>
+  </div>
 </div>
 {% endblock %}

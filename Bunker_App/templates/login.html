@@ -1,44 +1,73 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Login — PartyUp{% endblock %}
 
-{% block title %}Login - Bunker{% endblock %}
+{% block extra_head %}
+<style>
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+  .auth-wrap {
+    width: 100%; max-width: 420px;
+    animation: fadeUp .45s ease both;
+  }
+  .auth-logo {
+    font-family: var(--font-head);
+    font-size: 2.8rem;
+    font-weight: 800;
+    letter-spacing: .06em;
+    text-align: center;
+    margin-bottom: .25rem;
+  }
+  .auth-logo span { color: var(--gold); }
+  .auth-sub { text-align: center; color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+  .auth-footer { text-align: center; margin-top: 1.25rem; color: var(--muted); font-size: .88rem; }
+  .auth-footer a { color: var(--gold); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
 
-{% block unauth_content %}
-<div class="card" style="max-width: 560px; width: 100%; padding: 38px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; margin-bottom: 28px;">
-        <div>
-            <p style="margin: 0 0 10px; color: var(--accent); font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.85rem;">Member access</p>
-            <h1 style="margin: 0; font-size: 2.4rem; line-height: 1.1;">Login to Bunker</h1>
-        </div>
-        <span style="background: rgba(245,166,35,0.14); color: var(--accent); padding: 10px 16px; border-radius: 18px; font-weight: 700;">Secure login</span>
-    </div>
+  /* glow orb bg */
+  .glow-orb {
+    position: fixed;
+    border-radius: 50%;
+    filter: blur(90px);
+    pointer-events: none;
+    z-index: 0;
+  }
+  .orb1 { width: 380px; height: 380px; background: rgba(245,166,35,.07); top: -80px; left: -80px; }
+  .orb2 { width: 300px; height: 300px; background: rgba(45,224,196,.05); bottom: -60px; right: -60px; }
+</style>
+{% endblock %}
 
-    <p style="margin: 0 0 24px; color: var(--text-muted);">Enter your credentials to access your lobbies, friends, and matches.</p>
+{% block content %}
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
 
-    {% if messages %}
-        {% for message in messages %}
-            {% if message.tags == 'success' %}
-                <div class="success-box">
-                    <p>✓ {{ message }}</p>
-                </div>
-            {% else %}
-                <div class="error-box">
-                    <p>⚠ {{ message }}</p>
-                </div>
-            {% endif %}
-        {% endfor %}
-    {% endif %}
+<div class="auth-wrap">
+  <div class="auth-logo">PARTY<span>UP</span></div>
+  <p class="auth-sub">Sign in to join your crew</p>
 
-    <form method="post" class="form-grid">
-        {% csrf_token %}
-        <input type="text" name="username" placeholder="Username" required>
-        <input type="email" name="email" placeholder="Email" required>
-        <input type="password" name="password" placeholder="Password" required>
-        <button class="primary-button" type="submit">Login</button>
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <form method="POST" action="{% url 'login' %}">
+      {% csrf_token %}
+      <div class="field">
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email" placeholder="you@example.com" required />
+      </div>
+      <div class="field">
+        <label for="password">Password</label>
+        <input type="password" id="password" name="password" placeholder="••••••••" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">Sign In</button>
     </form>
+  </div>
 
-    <div class="inline-links" style="justify-content: space-between; margin-top: 24px; gap: 18px;">
-        <a href="{% url 'register' %}">Create a new account</a>
-        <span style="color: var(--text-muted);">Need help? Contact support.</span>
-    </div>
+  <p class="auth-footer">
+    Don't have an account? <a href="{% url 'register' %}">Create one</a>
+  </p>
 </div>
 {% endblock %}

@@ -1,20 +1,45 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Join Party — PartyUp{% endblock %}
 
-{% block title %}Join Party - Bunker{% endblock %}
-{% block header %}Join a Party{% endblock %}
-{% block subtitle %}Enter a lobby code or browse public lobbies.{% endblock %}
+{% block extra_head %}
+<style>
+  .join-wrap { max-width: 480px; margin: 0 auto; }
+  .code-input {
+    font-family: var(--font-head);
+    font-size: 2rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .25em !important;
+    text-align: center !important;
+    padding: 1rem !important;
+    color: var(--gold) !important;
+  }
+  .code-input::placeholder { color: var(--border); letter-spacing: .2em; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 520px; width: 100%;">
-    <form method="post" class="form-grid">
-        {% csrf_token %}
-        <input type="text" name="party_code" placeholder="Lobby Code" required>
-        <button class="primary-button" type="submit">Join Party</button>
-    </form>
+<div class="join-wrap">
+  <div class="page-header anim" style="justify-content:center; text-align:center; flex-direction:column;">
+    <h1>Join a Party</h1>
+    <p class="subtitle">Enter the 6-digit party code</p>
+  </div>
 
-    <div class="button-row" style="margin-top: 24px;">
-        <a class="secondary-button" href="{% url 'find_party' %}">Browse Available Lobbies</a>
-        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
-    </div>
+  <div class="card anim anim-d1">
+    <form method="POST" action="{% url 'join_party' %}">
+      {% csrf_token %}
+      <div class="field">
+        <label for="party_code">Party Code</label>
+        <input class="code-input" type="text" id="party_code" name="party_code"
+          placeholder="000000" maxlength="6" pattern="\d{6}" required />
+      </div>
+      <button type="submit" class="btn btn-primary btn-full">Join →</button>
+    </form>
+  </div>
+
+  <div style="text-align:center; margin-top:1.5rem;" class="anim anim-d2">
+    <a href="{% url 'find_party' %}" style="color:var(--muted); font-size:.9rem; text-decoration:none;">
+      Don't have a code? <span style="color:var(--gold);">Browse open lobbies →</span>
+    </a>
+  </div>
 </div>
 {% endblock %}

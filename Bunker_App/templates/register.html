@@ -1,43 +1,87 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Register — PartyUp{% endblock %}
 
-{% block title %}Register - Bunker{% endblock %}
+{% block extra_head %}
+<style>
+  body { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; }
+  .auth-wrap { width: 100%; max-width: 460px; animation: fadeUp .45s ease both; }
+  .auth-logo { font-family: var(--font-head); font-size: 2.8rem; font-weight: 800; letter-spacing: .06em; text-align: center; margin-bottom: .25rem; }
+  .auth-logo span { color: var(--gold); }
+  .auth-sub { text-align: center; color: var(--muted); font-size: .9rem; margin-bottom: 2rem; }
+  .auth-footer { text-align: center; margin-top: 1.25rem; color: var(--muted); font-size: .88rem; }
+  .auth-footer a { color: var(--gold); text-decoration: none; font-weight: 500; }
+  .auth-footer a:hover { text-decoration: underline; }
+  .field-errors { list-style: none; margin-top: .35rem; }
+  .field-errors li { font-size: .82rem; color: var(--red); }
+  .glow-orb { position: fixed; border-radius: 50%; filter: blur(90px); pointer-events: none; z-index: 0; }
+  .orb1 { width: 380px; height: 380px; background: rgba(245,166,35,.07); top: -80px; right: -80px; }
+  .orb2 { width: 300px; height: 300px; background: rgba(45,224,196,.05); bottom: -60px; left: -60px; }
+</style>
+{% endblock %}
 
-{% block unauth_content %}
-<div class="card" style="max-width: 560px; width: 100%; padding: 38px; margin: 0 auto;">
-    <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 18px; flex-wrap: wrap; margin-bottom: 28px;">
-        <div>
-            <p style="margin: 0 0 10px; color: var(--accent); font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.85rem;">Join the bunker</p>
-            <h1 style="margin: 0; font-size: 2.4rem; line-height: 1.1;">Create account</h1>
+{% block content %}
+<div class="glow-orb orb1"></div>
+<div class="glow-orb orb2"></div>
+
+<div class="auth-wrap">
+  <div class="auth-logo">PARTY<span>UP</span></div>
+  <p class="auth-sub">Create your account</p>
+
+  {% if messages %}
+  <div class="messages">
+    {% for message in messages %}
+    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <div class="card">
+    <form method="POST" action="{% url 'register' %}">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="{{ form.username.id_for_label }}">Username</label>
+        {{ form.username }}
+        {% if form.username.errors %}
+          <ul class="field-errors">{% for e in form.username.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <div class="field">
+        <label for="{{ form.email.id_for_label }}">Email</label>
+        {{ form.email }}
+        {% if form.email.errors %}
+          <ul class="field-errors">{% for e in form.email.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+        {% endif %}
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label for="{{ form.password1.id_for_label }}">Password</label>
+          {{ form.password1 }}
+          {% if form.password1.errors %}
+            <ul class="field-errors">{% for e in form.password1.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
         </div>
-        <span style="background: rgba(245,166,35,0.14); color: var(--accent); padding: 10px 16px; border-radius: 18px; font-weight: 700;">Quick setup</span>
-    </div>
+        <div class="field">
+          <label for="{{ form.password2.id_for_label }}">Confirm Password</label>
+          {{ form.password2 }}
+          {% if form.password2.errors %}
+            <ul class="field-errors">{% for e in form.password2.errors %}<li>{{ e }}</li>{% endfor %}</ul>
+          {% endif %}
+        </div>
+      </div>
 
-    <p style="margin: 0 0 24px; color: var(--text-muted);">Sign up and start connecting with friends in secure game lobbies.</p>
+      {% if form.non_field_errors %}
+      <div class="msg msg-error">{{ form.non_field_errors }}</div>
+      {% endif %}
 
-    {% load widget_tweaks %}
-
-    {% if form.errors %}
-    <div class="error-box">
-        {% for field in form %}
-            {% for error in field.errors %}
-                <p>⚠ {{ error }}</p>
-            {% endfor %}
-        {% endfor %}
-    </div>
-    {% endif %}
-
-    <form method="POST" action="{% url 'register' %}" class="form-grid">
-        {% csrf_token %}
-        {{ form.username|attr:"placeholder:Username" }}
-        {{ form.email|attr:"placeholder:Email" }}
-        {{ form.password1|attr:"placeholder:Password" }}
-        {{ form.password2|attr:"placeholder:Confirm Password" }}
-        <button class="primary-button" type="submit">Register</button>
+      <button type="submit" class="btn btn-primary btn-full" style="margin-top:.5rem;">Create Account</button>
     </form>
+  </div>
 
-    <div class="inline-links" style="justify-content: space-between; margin-top: 24px; gap: 18px;">
-        <a href="{% url 'login' %}">Already have an account? Login</a>
-        <span class="text-muted">Email confirmation included.</span>
-    </div>
+  <p class="auth-footer">
+    Already have an account? <a href="{% url 'login' %}">Sign in</a>
+  </p>
 </div>
 {% endblock %}

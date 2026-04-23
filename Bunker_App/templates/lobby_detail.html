@@ -1,88 +1,197 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}{{ lobby.name }} — PartyUp{% endblock %}
 
-{% block title %}{{ lobby.name }} - Bunker{% endblock %}
-{% block header %}{{ lobby.name }}{% endblock %}
-{% block subtitle %}Lobby code {{ lobby.code }} • Created by {{ lobby.creator.username }}{% endblock %}
+{% block extra_head %}
+<style>
+  .lobby-hero {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 1.8rem 2rem;
+    margin-bottom: 1.5rem;
+    position: relative; overflow: hidden;
+  }
+  .lobby-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(245,166,35,.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+  .lobby-code-tag {
+    display: inline-flex; align-items: center; gap: .5rem;
+    background: rgba(245,166,35,.12); border: 1px solid var(--gold-dim);
+    border-radius: 6px; padding: .35rem .8rem;
+    font-family: var(--font-head); font-size: 1.1rem; font-weight: 700;
+    letter-spacing: .12em; color: var(--gold);
+    cursor: pointer; user-select: all;
+    margin-top: .75rem; margin-bottom: 1.25rem;
+  }
+  .lobby-code-tag:hover { background: rgba(245,166,35,.2); }
+  .lobby-actions-bar { display: flex; gap: .6rem; flex-wrap: wrap; }
+
+  /* participants */
+  .participants-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: .7rem; margin-bottom: 2rem;
+  }
+  .participant-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 8px;
+    padding: .9rem 1rem;
+    display: flex; align-items: center; gap: .75rem;
+    position: relative;
+  }
+  .p-avatar {
+    width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: #000;
+  }
+  .p-info { flex: 1; min-width: 0; }
+  .p-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kick-btn {
+    position: absolute; top: .4rem; right: .4rem;
+    background: none; border: none; cursor: pointer;
+    color: var(--muted); font-size: .9rem; padding: .15rem .3rem; border-radius: 4px;
+    transition: color .15s, background .15s;
+  }
+  .kick-btn:hover { color: var(--red); background: rgba(232,69,69,.1); }
+
+  /* invite panel */
+  .invite-list { display: flex; flex-direction: column; gap: .5rem; }
+  .invite-row {
+    display: flex; align-items: center; gap: .75rem;
+    padding: .6rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .invite-row:last-child { border-bottom: none; }
+  .i-avatar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: .9rem; font-weight: 800; color: #000;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+  }
+  .i-name { flex: 1; font-size: .9rem; }
+
+  .section-title {
+    font-family: var(--font-head); font-size: 1rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: .85rem; display: flex; align-items: center; gap: .6rem;
+  }
+  .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card" style="max-width: 720px; width: 100%;">
-    <div class="small-card" style="margin-bottom: 20px;">
-        <p><strong>Lobby Code:</strong> {{ lobby.code }}</p>
-        <p class="text-muted">Participants: {{ lobby.participants.count }} / 9</p>
+<div class="lobby-hero anim">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
+    <div>
+      <h1 style="font-size:2.2rem;">{{ lobby.name }}</h1>
+      <p style="color:var(--muted); font-size:.9rem; margin-top:.25rem;">
+        Host: <strong style="color:var(--text)">{{ lobby.creator.username }}</strong>
+        {% if lobby.creator == request.user %}<span class="badge badge-gold" style="margin-left:.4rem;">You</span>{% endif %}
+      </p>
+      <div class="lobby-code-tag" title="Click to copy" onclick="navigator.clipboard.writeText('{{ lobby.code }}'); this.textContent='✓ Copied!'">
+        🔑 {{ lobby.code }}
+      </div>
+      <div style="font-size:.85rem; color:var(--muted);">
+        <span class="badge badge-muted">{{ lobby.participants.count }} / 9 players</span>
+      </div>
     </div>
+  </div>
 
-    <section>
-        <h3>Participants</h3>
-        <ul style="list-style: none; padding: 0; display: grid; gap: 12px; margin: 0;">
-            {% for participant in lobby.participants.all %}
-            <li style="background: rgba(255,255,255,0.04); padding: 16px 18px; border-radius: 20px; display: flex; justify-content: space-between; align-items: center; gap: 12px;">
-                <span>{{ participant.username }}</span>
-                {% if user == lobby.creator and participant != lobby.creator %}
-                <form method="post" style="margin: 0;">
-                    {% csrf_token %}
-                    <input type="hidden" name="action" value="kick">
-                    <input type="hidden" name="user_id" value="{{ participant.id }}">
-                    <button class="secondary-button" type="submit" style="padding: 10px 16px;">Kick</button>
-                </form>
-                {% endif %}
-            </li>
-            {% endfor %}
-        </ul>
-    </section>
+  <hr class="divider" />
 
-    {% if user in lobby.participants.all and friends %}
-    <section style="margin-top: 24px;">
-        <h3>Invite Friends</h3>
-        <div style="display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));">
-            {% for friend in friends %}
-                {% with friend_user=friend.to_user|default:friend.from_user %}
-                    {% if friend.from_user == user %}
-                        {% with friend_user=friend.to_user %}
-                            {% if friend_user not in lobby.participants.all %}
-                            <form method="post" action="{% url 'send_lobby_invitation' lobby.id %}" style="display: inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="friend_id" value="{{ friend_user.id }}">
-                                <button class="secondary-button" type="submit" style="width: 100%; padding: 10px;">{{ friend_user.username }}</button>
-                            </form>
-                            {% endif %}
-                        {% endwith %}
-                    {% else %}
-                        {% with friend_user=friend.from_user %}
-                            {% if friend_user not in lobby.participants.all %}
-                            <form method="post" action="{% url 'send_lobby_invitation' lobby.id %}" style="display: inline;">
-                                {% csrf_token %}
-                                <input type="hidden" name="friend_id" value="{{ friend_user.id }}">
-                                <button class="secondary-button" type="submit" style="width: 100%; padding: 10px;">{{ friend_user.username }}</button>
-                            </form>
-                            {% endif %}
-                        {% endwith %}
-                    {% endif %}
-                {% endwith %}
-            {% endfor %}
-        </div>
-    </section>
+  <div class="lobby-actions-bar">
+    <!-- Leave -->
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="leave" />
+      <button class="btn btn-outline btn-sm" type="submit"
+        onclick="return confirm('Leave this lobby?')">
+        🚪 Leave
+      </button>
+    </form>
+
+    {% if request.user == lobby.creator %}
+    <!-- Delete -->
+    <form method="POST">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="delete" />
+      <button class="btn btn-danger btn-sm" type="submit"
+        onclick="return confirm('Delete this lobby for everyone?')">
+        🗑 Delete Lobby
+      </button>
+    </form>
     {% endif %}
-
-    <div class="button-row" style="margin-top: 24px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));">
-        {% if user == lobby.creator %}
-            <form method="post" style="width: 100%;">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="leave">
-                <button class="secondary-button" type="submit">Leave Lobby</button>
-            </form>
-            <form method="post" style="width: 100%;">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="delete">
-                <button class="primary-button" type="submit">Delete Lobby</button>
-            </form>
-        {% elif user in lobby.participants.all %}
-            <form method="post" style="width: 100%;">
-                {% csrf_token %}
-                <input type="hidden" name="action" value="leave">
-                <button class="secondary-button" type="submit">Leave Lobby</button>
-            </form>
-        {% endif %}
-        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
-    </div>
+  </div>
 </div>
+
+<!-- Participants -->
+<div class="section-title anim anim-d1">
+  Participants
+  <span class="badge badge-muted">{{ lobby.participants.count }}</span>
+</div>
+
+<div class="participants-grid anim anim-d1">
+  {% for participant in lobby.participants.all %}
+  <div class="participant-card">
+    <div class="p-avatar"
+      style="background: {% cycle 'linear-gradient(135deg,#f5a623,#e87c23)' 'linear-gradient(135deg,#2de0c4,#1a9e8e)' 'linear-gradient(135deg,#a78bfa,#7c3aed)' 'linear-gradient(135deg,#f472b6,#be185d)' %};">
+      {{ participant.username|first|upper }}
+    </div>
+    <div class="p-info">
+      <div class="p-name">{{ participant.username }}</div>
+      {% if participant == lobby.creator %}
+        <span class="badge badge-gold" style="font-size:.7rem;">Host</span>
+      {% endif %}
+      {% if participant == request.user %}
+        <span class="badge badge-teal" style="font-size:.7rem;">You</span>
+      {% endif %}
+    </div>
+
+    {% if request.user == lobby.creator and participant != request.user %}
+    <form method="POST" style="position:absolute;top:.4rem;right:.4rem;">
+      {% csrf_token %}
+      <input type="hidden" name="action" value="kick" />
+      <input type="hidden" name="user_id" value="{{ participant.id }}" />
+      <button class="kick-btn" type="submit" title="Kick {{ participant.username }}"
+        onclick="return confirm('Kick {{ participant.username }}?')">✕</button>
+    </form>
+    {% endif %}
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Invite Friends -->
+{% if friends %}
+<div class="section-title anim anim-d2">Invite Friends</div>
+<div class="card anim anim-d2">
+  <div class="invite-list">
+    {% for fr in friends %}
+      {% if fr.from_user == request.user %}{% with friend_user=fr.to_user %}
+      {% if friend_user not in lobby.participants.all %}
+      <div class="invite-row">
+        <div class="i-avatar">{{ friend_user.username|first|upper }}</div>
+        <span class="i-name">{{ friend_user.username }}</span>
+        <form method="POST" action="{% url 'send_lobby_invitation' lobby.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="friend_id" value="{{ friend_user.id }}" />
+          <button class="btn btn-teal btn-sm" type="submit">Invite</button>
+        </form>
+      </div>
+      {% endif %}
+      {% endwith %}{% else %}{% with friend_user=fr.from_user %}
+      {% if friend_user not in lobby.participants.all %}
+      <div class="invite-row">
+        <div class="i-avatar">{{ friend_user.username|first|upper }}</div>
+        <span class="i-name">{{ friend_user.username }}</span>
+        <form method="POST" action="{% url 'send_lobby_invitation' lobby.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="friend_id" value="{{ friend_user.id }}" />
+          <button class="btn btn-teal btn-sm" type="submit">Invite</button>
+        </form>
+      </div>
+      {% endif %}
+      {% endwith %}{% endif %}
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
 {% endblock %}

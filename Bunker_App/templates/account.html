@@ -1,19 +1,92 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% block title %}Account — PartyUp{% endblock %}
 
-{% block title %}Account - Bunker{% endblock %}
-{% block header %}Your Account{% endblock %}
-{% block subtitle %}View your profile details and account information.{% endblock %}
+{% block extra_head %}
+<style>
+  .avatar-ring {
+    width: 80px; height: 80px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #000;
+    flex-shrink: 0;
+  }
+  .profile-header {
+    display: flex; align-items: center; gap: 1.4rem;
+    margin-bottom: 2rem;
+  }
+  .profile-info h2 { font-size: 2rem; }
+  .profile-info p { color: var(--muted); font-size: .9rem; margin-top: .2rem; }
+
+  .info-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .85rem 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .info-row:last-child { border-bottom: none; }
+  .info-lbl { font-size: .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+  .info-val { font-size: .95rem; font-weight: 500; color: var(--text); }
+
+  .danger-zone { border-color: rgba(232,69,69,.3); }
+  .danger-zone .card-title {
+    font-family: var(--font-head); font-size: 1rem; font-weight: 700;
+    color: var(--red); letter-spacing: .06em; text-transform: uppercase;
+    margin-bottom: 1rem;
+  }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="card">
-    <div class="account-info">
-        <p><strong>Username:</strong> {{ request.user.username }}</p>
-        <p><strong>Email:</strong> {{ request.user.email }}</p>
-        <p><strong>ID:</strong> {{ request.user.id }}</p>
-        <p><strong>Name:</strong> {{ request.user.profile.name|default:"Not set" }}</p>
+<div class="page-header anim">
+  <div>
+    <h1>Account</h1>
+    <p class="subtitle">Manage your profile settings</p>
+  </div>
+</div>
+
+<div class="card anim anim-d1" style="margin-bottom:1rem;">
+  <div class="profile-header">
+    <div class="avatar-ring">{{ request.user.username|first|upper }}</div>
+    <div class="profile-info">
+      <h2>{{ request.user.username }}</h2>
+      <p>Member since {{ request.user.date_joined|date:"F Y" }}</p>
     </div>
-    <div class="button-row" style="margin-top: 20px;">
-        <a class="secondary-button" href="{% url 'main' %}">Back to Main</a>
-    </div>
+  </div>
+
+  <div class="info-row">
+    <span class="info-lbl">Username</span>
+    <span class="info-val">{{ request.user.username }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-lbl">Email</span>
+    <span class="info-val">{{ request.user.email }}</span>
+  </div>
+  <div class="info-row">
+    <span class="info-lbl">Status</span>
+    <span class="info-val">
+      {% if request.user.is_active %}
+        <span class="badge badge-teal">Active</span>
+      {% else %}
+        <span class="badge badge-muted">Inactive</span>
+      {% endif %}
+    </span>
+  </div>
+  <div class="info-row">
+    <span class="info-lbl">Account Type</span>
+    <span class="info-val">
+      {% if request.user.is_staff %}
+        <span class="badge badge-gold">Staff</span>
+      {% else %}
+        <span class="badge badge-muted">Standard</span>
+      {% endif %}
+    </span>
+  </div>
+</div>
+
+<div class="card anim anim-d2 danger-zone">
+  <div class="card-title">⚠ Danger Zone</div>
+  <p style="color:var(--muted); font-size:.88rem; margin-bottom:1rem;">
+    Once you log out, you'll need your credentials to sign back in.
+  </p>
+  <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
 </div>
 {% endblock %}
