@@ -43,14 +43,6 @@
   <div class="auth-logo">PARTY<span>UP</span></div>
   <p class="auth-sub">Sign in to join your crew</p>
 
-  {% if messages %}
-  <div class="messages">
-    {% for message in messages %}
-    <div class="msg msg-{{ message.tags }}">{{ message }}</div>
-    {% endfor %}
-  </div>
-  {% endif %}
-
   <div class="card">
     <form method="POST" action="{% url 'login' %}">
       {% csrf_token %}
