@@ -1,0 +1,70 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+
+# =========================
+# Virtual Environments
+# =========================
+env/
+venv/
+.venv/
+ENV/
+env.bak/
+venv.bak/
+
+# =========================
+# Django
+# =========================
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+media/
+staticfiles/
+
+# Local settings (important for secrets)
+local_settings.py
+.env
+.env.*
+
+# =========================
+# Django migrations (optional - usually NOT ignored in real projects)
+# Uncomment if you really want to reset migrations
+# =========================
+# */migrations/*.pyc
+# */migrations/__pycache__/
+
+# =========================
+# IDE / Editors
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Testing / Coverage
+# =========================
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.pytest_cache/
+
+# =========================
+# Static build tools (optional)
+# =========================
+node_modules/
+dist/
+build/

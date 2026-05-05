@@ -10,8 +10,10 @@ from django.contrib import messages
 from .utils import login_required_message
 from django.db.models import Q
 import random
+from django.core.mail import EmailMultiAlternatives
 
 MAX_LOBBY_PARTICIPANTS = 9
+
 from django.template.loader import render_to_string
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.mail import EmailMessage
@@ -52,14 +54,20 @@ def send_verification_email(request, username, email_address, password):
         'password': make_password(password),
     }
     token = dumps(payload, salt=ACTIVATION_SALT)
-    message = render_to_string('verify_email.html', {
+    
+    context = {
         'user': username,
         'domain': get_current_site(request).domain,
         'token': token,
         'protocol': 'https' if request.is_secure() else 'http',
-    })
+    }
 
-    email = EmailMessage(mail_subject, message, to=[email_address])
+    html_content = render_to_string('verify_email.html', context)
+    text_content = f"Hey {username}, activate your account here: {context['protocol']}://{context['domain']}/activate/{token}/"
+
+    email = EmailMultiAlternatives(mail_subject, text_content, to=[email_address])
+    email.attach_alternative(html_content, "text/html")
+
     if email.send():
         messages.success(request, f'Please confirm your email address to complete the registration. We have sent you an email to {email_address}')
         return True

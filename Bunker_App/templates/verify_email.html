@@ -1,51 +1,134 @@
-{% extends "base.html" %}
-{% block title %}Verify Your Email — PartyUp{% endblock %}
-
-{% block content %}
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <style>
-    body { font-family: 'DM Sans', Arial, sans-serif; background: #0b0f1a; color: #e8eaf0; margin: 0; padding: 40px 20px; }
-    .container { max-width: 560px; margin: 0 auto; }
-    .header { text-align: center; margin-bottom: 32px; }
-    .brand { font-size: 2.2rem; font-weight: 800; letter-spacing: .05em; color: #f5a623; }
-    .card { background: #1a2235; border: 1px solid #253047; border-radius: 10px; padding: 36px 40px; }
-    h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 12px; color: #e8eaf0; }
-    p { color: #9aa3be; line-height: 1.7; margin-bottom: 1rem; }
-    .btn {
-      display: inline-block;
-      background: #f5a623; color: #000;
-      font-weight: 700; font-size: 1rem; letter-spacing: .04em;
-      padding: .75rem 2rem;
-      border-radius: 6px;
-      text-decoration: none;
-      margin: 8px 0 20px;
-    }
-    .link-fallback { font-size: .82rem; color: #6b7a99; word-break: break-all; }
-    .footer { text-align: center; margin-top: 24px; color: #4a5568; font-size: .8rem; }
-  </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Verify Your Email — PartyUp</title>
 </head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="brand">PARTYUP</div>
-    </div>
-    <div class="card">
-      <h2>Hey {{ user }}, confirm your email</h2>
-      <p>Thanks for signing up! Click the button below to activate your account. This link expires in 24 hours.</p>
-      <a class="btn" href="{{ protocol }}://{{ domain }}{% url 'activate' token %}">
-        Activate Account
-      </a>
-      <p class="link-fallback">
-        Or copy this link into your browser:<br />
-        {{ protocol }}://{{ domain }}{% url 'activate' token %}
-      </p>
-      <p style="margin-bottom:0; font-size:.85rem;">If you didn't create this account, you can safely ignore this email.</p>
-    </div>
-    <div class="footer">© PartyUp — We'll see you in the lobby.</div>
-  </div>
+<body style="margin:0; padding:0; background-color:#0b0f1a; font-family:Georgia, 'Times New Roman', serif;">
+
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+    style="background-color:#0b0f1a; padding:48px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+          style="max-width:560px;">
+
+          <!-- HEADER -->
+          <tr>
+            <td align="center" style="padding-bottom:28px;">
+              <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#f5a623; border-radius:4px; padding:6px 18px;">
+                    <span style="font-family:Georgia, serif; font-size:13px; font-weight:bold;
+                      letter-spacing:0.25em; color:#0b0f1a; text-transform:uppercase;">
+                      PARTYUP
+                    </span>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- CARD -->
+          <tr>
+            <td style="background-color:#141929; border:1px solid #222d45; border-radius:12px; overflow:hidden;">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="background-color:#f5a623; height:4px; font-size:0; line-height:0;">&nbsp;</td>
+                </tr>
+              </table>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td style="padding:40px 44px 36px;">
+
+                    <p style="margin:0 0 16px 0; font-family:Georgia, serif;
+                      font-size:11px; letter-spacing:0.18em; color:#f5a623; text-transform:uppercase;">
+                      Email Verification
+                    </p>
+
+                    <h1 style="margin:0 0 16px 0; font-family:Georgia, serif;
+                      font-size:26px; font-weight:bold; color:#edf0f7; line-height:1.3;">
+                      Hey {{ user }},<br/>confirm your email ✉️
+                    </h1>
+
+                    <table role="presentation" width="48" cellpadding="0" cellspacing="0" border="0"
+                      style="margin-bottom:20px;">
+                      <tr>
+                        <td style="background-color:#f5a623; height:2px; font-size:0; line-height:0;">&nbsp;</td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0 0 28px 0; font-family:Arial, sans-serif;
+                      font-size:15px; color:#8a97b8; line-height:1.75;">
+                      Thanks for joining the party! One quick step — click the button below
+                      to activate your account. This link will expire in
+                      <strong style="color:#c8d0e8;">24 hours</strong>.
+                    </p>
+
+                    <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                      style="margin-bottom:28px;">
+                      <tr>
+                        <td style="background-color:#f5a623; border-radius:6px;">
+                          <a href="{{ protocol }}://{{ domain }}{% url 'activate' token %}"
+                            style="display:inline-block; padding:14px 36px;
+                            font-family:Arial, sans-serif; font-size:15px;
+                            font-weight:bold; color:#0b0f1a; text-decoration:none;
+                            letter-spacing:0.05em; border-radius:6px;">
+                            Activate Account →
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                      style="margin-bottom:28px;">
+                      <tr>
+                        <td style="background-color:#0f1624; border-radius:6px;
+                          border-left:3px solid #f5a623; padding:14px 16px;">
+                          <p style="margin:0 0 4px 0; font-family:Arial, sans-serif;
+                            font-size:11px; color:#5a6480; letter-spacing:0.1em; text-transform:uppercase;">
+                            Button not working? Copy this link:
+                          </p>
+                          <p style="margin:0; font-family:'Courier New', monospace;
+                            font-size:12px; color:#6b7a99; word-break:break-all; line-height:1.5;">
+                            {{ protocol }}://{{ domain }}{% url 'activate' token %}
+                          </p>
+                        </td>
+                      </tr>
+                    </table>
+
+                    <p style="margin:0; font-family:Arial, sans-serif;
+                      font-size:12px; color:#4a5568; line-height:1.6;
+                      border-top:1px solid #1e2a40; padding-top:20px;">
+                      Didn't sign up for PartyUp? No worries — you can safely ignore this email.
+                      Your address won't be used for anything.
+                    </p>
+
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+
+          <!-- FOOTER -->
+          <tr>
+            <td align="center" style="padding-top:24px;">
+              <p style="margin:0 0 6px 0; font-family:Arial, sans-serif;
+                font-size:12px; color:#2e3a55; letter-spacing:0.08em;">
+                © PartyUp · All rights reserved
+              </p>
+              <p style="margin:0; font-family:Georgia, serif;
+                font-size:11px; color:#2a3350; font-style:italic;">
+                We'll see you in the lobby.
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+
 </body>
 </html>
-{% endblock %}
