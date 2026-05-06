@@ -99,6 +99,14 @@
   <hr class="divider" />
 
   <div class="lobby-actions-bar">
+    {% if request.user == lobby.creator and lobby.status == 'waiting' %}
+    <!-- Start Game -->
+    <a href="{% url 'start_game' lobby.id %}" class="btn btn-primary btn-sm"
+      onclick="return confirm('Start game for all {{ lobby.participants.count }} players?')">
+      🎮 Start Game
+    </a>
+    {% endif %}
+
     <!-- Leave -->
     <form method="POST">
       {% csrf_token %}

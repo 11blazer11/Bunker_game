@@ -1,0 +1,338 @@
+{% extends "base.html" %}
+{% block title %}Game — {{ lobby.name }} — PartyUp{% endblock %}
+
+{% block extra_head %}
+<style>
+  .game-hero {
+    background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    position: relative; overflow: hidden;
+  }
+  .game-hero::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(45,224,196,.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .character-card {
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    position: relative;
+    overflow: hidden;
+    transition: all .2s;
+  }
+  .character-card:hover { border-color: var(--gold-dim); transform: translateY(-2px); }
+  .character-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(245,166,35,.04) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .char-header {
+    display: flex; align-items: center; gap: 1rem; margin-bottom: 1.5rem;
+    position: relative; z-index: 1;
+  }
+  .char-avatar {
+    width: 56px; height: 56px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 1.6rem; font-weight: 800;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    color: #000; box-shadow: 0 0 20px rgba(245,166,35,.2);
+  }
+  .char-info { flex: 1; }
+  .char-name {
+    font-family: var(--font-head); font-size: 1.2rem; font-weight: 700;
+    letter-spacing: .05em; color: var(--text);
+  }
+  .char-user {
+    font-size: .85rem; color: var(--muted); margin-top: .2rem;
+  }
+
+  .char-badge-you {
+    display: inline-block;
+    background: rgba(45,224,196,.15); border: 1px solid var(--teal);
+    border-radius: 4px; padding: .25rem .6rem;
+    font-size: .75rem; font-weight: 600; color: var(--teal);
+    text-transform: uppercase; letter-spacing: .04em;
+    margin-left: .5rem;
+  }
+
+  .char-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem; position: relative; z-index: 1;
+    margin-bottom: 1rem;
+  }
+  .char-trait {
+    background: rgba(11,15,26,.6); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 6px; padding: .8rem;
+  }
+  .char-trait-label {
+    font-size: .75rem; text-transform: uppercase; color: var(--muted);
+    letter-spacing: .08em; margin-bottom: .4rem; display: block;
+  }
+  .char-trait-value {
+    font-family: var(--font-head); font-size: .95rem; font-weight: 600;
+    color: var(--text);
+  }
+
+  .char-characteristics {
+    background: rgba(11,15,26,.6); border: 1px solid rgba(255,255,255,.08);
+    border-radius: 6px; padding: 1rem; position: relative; z-index: 1;
+  }
+  .char-characteristics-title {
+    font-family: var(--font-head); font-size: .85rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--muted);
+    margin-bottom: .75rem; display: flex; align-items: center; gap: .4rem;
+  }
+  .char-characteristics-list {
+    display: flex; flex-wrap: wrap; gap: .5rem;
+  }
+  .char-trait-tag {
+    display: inline-block; padding: .35rem .65rem;
+    border-radius: 4px; font-size: .8rem; font-weight: 500;
+    backdrop-filter: blur(10px);
+  }
+  .char-trait-tag.good {
+    background: rgba(45,224,196,.2); border: 1px solid var(--teal); color: var(--teal);
+  }
+  .char-trait-tag.bad {
+    background: rgba(232,69,69,.2); border: 1px solid var(--red); color: var(--red);
+  }
+
+  .section-title {
+    font-family: var(--font-head); font-size: 1.1rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted); margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: .6rem;
+  }
+  .section-title::before { content: ''; display: inline-block; width: 3px; height: 20px; background: var(--gold); border-radius: 2px; }
+
+  .all-players {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+  }
+
+  .controls {
+    display: flex; gap: .75rem; flex-wrap: wrap;
+    padding-top: 1.5rem; border-top: 1px solid var(--border);
+    position: relative; z-index: 1;
+  }
+
+  .divider { border: none; border-top: 1px solid var(--border); margin: 1.5rem 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="game-hero anim">
+  <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1.5rem;">
+    <div>
+      <h1 style="font-size:2.4rem; margin-bottom:.25rem;">🎮 Game Started</h1>
+      <p style="color:var(--muted); font-size:.95rem;">
+        Lobby: <strong style="color:var(--text)">{{ lobby.name }}</strong>
+      </p>
+      <p style="color:var(--muted); font-size:.9rem; margin-top:.5rem;">
+        <span class="badge badge-muted">🎭 {{ game.player_characters.count }} players</span>
+      </p>
+    </div>
+  </div>
+  
+  <hr class="divider" />
+  
+  <div style="display:flex; gap:.75rem;">
+    <a href="{% url 'exit_game' game.id %}" class="btn btn-outline btn-sm" 
+      onclick="return confirm('Exit this game?')">
+      🚪 Exit Game
+    </a>
+  </div>
+</div>
+
+<!-- Your Character Section -->
+<div style="margin-bottom: 3rem;">
+  <div class="section-title">👤 Your Character</div>
+  
+  <div class="character-card">
+    <div class="char-header">
+      <div class="char-avatar">
+        {% if player_character.gender == 'female' %}♀{% else %}♂{% endif %}
+      </div>
+      <div class="char-info">
+        <div class="char-name">
+          Age {{ player_character.age }}
+          <span class="char-badge-you">You</span>
+        </div>
+        <div class="char-user">{{ player_character.player.username }}</div>
+      </div>
+    </div>
+
+    <div class="char-grid">
+      <div class="char-trait">
+        <span class="char-trait-label">Gender</span>
+        <div class="char-trait-value">{{ player_character.gender|title }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Height</span>
+        <div class="char-trait-value">{{ player_character.height }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Profession</span>
+        <div class="char-trait-value">{{ player_character.profession }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Hobby</span>
+        <div class="char-trait-value">{{ player_character.hobby }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Health</span>
+        <div class="char-trait-value">{{ player_character.health }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Item</span>
+        <div class="char-trait-value">{{ player_character.item }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Special Trait</span>
+        <div class="char-trait-value">{{ player_character.special_trait }}</div>
+      </div>
+      <div class="char-trait">
+        <span class="char-trait-label">Phobia</span>
+        <div class="char-trait-value">{{ player_character.phobia }}</div>
+      </div>
+    </div>
+
+    <hr class="divider" />
+
+    <div class="char-characteristics">
+      <div class="char-characteristics-title">📋 Full Characteristics</div>
+      <div class="char-characteristics-list">
+        {% for char_type, char_value, quality in player_character.characteristics %}
+          <span class="char-trait-tag {{ quality }}">{{ char_value }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- All Players Section -->
+<div>
+  <div class="section-title">🎭 All Players</div>
+  
+  <div class="all-players">
+    {% for character in all_characters %}
+      <div class="character-card">
+        <div class="char-header">
+          <div class="char-avatar">
+            {% if character.gender == 'female' %}♀{% else %}♂{% endif %}
+          </div>
+          <div class="char-info">
+            <div class="char-name">
+              Age {{ character.age }}
+              {% if character.player == request.user %}<span class="char-badge-you">You</span>{% endif %}
+            </div>
+            <div class="char-user">{{ character.player.username }}</div>
+          </div>
+        </div>
+
+        {% if character.player == request.user %}
+          <!-- Show full characteristics only for current player -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.8rem; position: relative; z-index: 1; margin-bottom:1rem;">
+            <div class="char-trait">
+              <span class="char-trait-label">Gender</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.gender|title }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Height</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.height }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Profession</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.profession }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Hobby</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.hobby }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Health</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.health }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Item</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.item }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Special</span>
+              <div class="char-trait-value" style="font-size:.85rem;">{{ character.special_trait|truncatewords:2 }}</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Phobia</span>
+              <div class="char-trait-value" style="font-size:.9rem;">{{ character.phobia }}</div>
+            </div>
+          </div>
+
+          <div class="char-characteristics" style="margin-bottom:0;">
+            <div class="char-characteristics-title">Characteristics</div>
+            <div class="char-characteristics-list">
+              {% for char_type, char_value, quality in character.characteristics %}
+                <span class="char-trait-tag {{ quality }}" style="font-size:.75rem;">{{ char_value|truncatewords:2 }}</span>
+              {% endfor %}
+            </div>
+          </div>
+        {% else %}
+          <!-- Hide characteristics for other players - show ??? -->
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:.8rem; position: relative; z-index: 1; margin-bottom:1rem;">
+            <div class="char-trait">
+              <span class="char-trait-label">Gender</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Height</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Profession</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Hobby</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Health</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Item</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Special</span>
+              <div class="char-trait-value" style="font-size:.85rem; color: var(--muted);">???</div>
+            </div>
+            <div class="char-trait">
+              <span class="char-trait-label">Phobia</span>
+              <div class="char-trait-value" style="font-size:.9rem; color: var(--muted);">???</div>
+            </div>
+          </div>
+
+          <div class="char-characteristics" style="margin-bottom:0;">
+            <div class="char-characteristics-title">🔒 Characteristics</div>
+            <div class="char-characteristics-list">
+              <span class="char-trait-tag" style="font-size:.75rem; background: rgba(11,15,26,.8); border: 1px solid rgba(255,255,255,.1); color: var(--muted);">??? ??? ???</span>
+            </div>
+          </div>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+<script>
+  // Auto-refresh to see other players' characters
+  setTimeout(() => {
+    location.reload();
+  }, 30000); // Refresh every 30 seconds
+</script>
+{% endblock %}

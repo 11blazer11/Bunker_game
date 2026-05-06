@@ -4,13 +4,14 @@ from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.hashers import make_password
 from django.core.signing import dumps, loads, BadSignature, SignatureExpired
 from .forms import CustomUserCreationForm
-from .models import Lobby, Friend, LobbyInvitation
+from .models import Lobby, Friend, LobbyInvitation, Game, PlayerCharacter
 from .charachteristics import *
 from django.contrib import messages
 from .utils import login_required_message
 from django.db.models import Q
 import random
 from django.core.mail import EmailMultiAlternatives
+from .game_utils import generate_character
 
 MAX_LOBBY_PARTICIPANTS = 9
 
@@ -415,3 +416,113 @@ def decline_lobby_invitation_view(request, invitation_id):
     except LobbyInvitation.DoesNotExist:
         messages.error(request, 'Invitation not found.')
     return redirect('main')
+
+
+@login_required_message
+def start_game_view(request, lobby_id):
+    """Start a game for the lobby - only creator can start"""
+    try:
+        lobby = Lobby.objects.get(id=lobby_id)
+        if request.user != lobby.creator:
+            messages.error(request, 'Only the lobby creator can start the game.')
+            return redirect('lobby_detail', lobby_id=lobby_id)
+        
+        if lobby.status != 'waiting':
+            messages.error(request, 'Game already started or finished.')
+            return redirect('lobby_detail', lobby_id=lobby_id)
+        
+        # Check if game already exists for this lobby
+        existing_game = Game.objects.filter(lobby=lobby).first()
+        if existing_game:
+            messages.info(request, 'Game already started.')
+            return redirect('game_detail', game_id=existing_game.id)
+        
+        # Create game and assign characters to all participants
+        game = Game.objects.create(lobby=lobby)
+        
+        for participant in lobby.participants.all():
+            character = generate_character()
+            PlayerCharacter.objects.create(
+                game=game,
+                player=participant,
+                age=character['age'],
+                gender=character['gender'],
+                height=character['height'],
+                profession=character['profession'],
+                hobby=character['hobby'],
+                health=character['health'],
+                item=character['item'],
+                special_trait=character['special_trait'],
+                phobia=character['phobia'],
+                characteristics=character['all_characteristics']
+            )
+        
+        # Update lobby status
+        lobby.status = 'in_game'
+        lobby.save()
+        
+        messages.success(request, 'Game started! Characters have been assigned.')
+        return redirect('game_detail', game_id=game.id)
+    except Lobby.DoesNotExist:
+        messages.error(request, 'Lobby does not exist.')
+        return redirect('main')
+
+
+@login_required_message
+def game_detail_view(request, game_id):
+    """Display the game and character details"""
+    try:
+        game = Game.objects.get(id=game_id)
+        
+        # Get the current player's character - this is the real permission check
+        # If they have a character in the game, they can view it
+        try:
+            player_character = game.player_characters.get(player=request.user)
+        except PlayerCharacter.DoesNotExist:
+            messages.error(request, 'You are not a participant in this game.')
+            return redirect('main')
+        
+        # Get all characters for display
+        all_characters = game.player_characters.all().select_related('player')
+        
+        return render(request, 'game_detail.html', {
+            'game': game,
+            'player_character': player_character,
+            'all_characters': all_characters,
+            'lobby': game.lobby,
+        })
+    
+    except Game.DoesNotExist:
+        messages.error(request, 'Game does not exist.')
+        return redirect('main')
+    except PlayerCharacter.DoesNotExist:
+        messages.error(request, 'Your character not found in this game.')
+        return redirect('main')
+
+
+@login_required_message
+def exit_game_view(request, game_id):
+    """Exit the current game"""
+    try:
+        game = Game.objects.get(id=game_id)
+        
+        # Find and delete the player's character
+        try:
+            player_character = game.player_characters.get(player=request.user)
+            player_character.delete()
+            messages.success(request, 'You have exited the game.')
+        except PlayerCharacter.DoesNotExist:
+            messages.warning(request, 'You are not in this game.')
+            return redirect('main')
+        
+        # Check if game is empty (all players have left)
+        remaining_characters = game.player_characters.count()
+        if remaining_characters == 0:
+            # Mark game as finished
+            game.lobby.status = 'finished'
+            game.lobby.save()
+        
+        return redirect('main')
+    except Game.DoesNotExist:
+        messages.error(request, 'Game does not exist.')
+        return redirect('main')
