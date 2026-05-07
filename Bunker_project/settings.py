@@ -131,6 +131,9 @@ LOGIN_URL = 'login'  # the name of your login url pattern in urls.py
 
 STATIC_URL = 'static/'
 
+MEDIA_URL = '/media/'
+MEDIA_ROOT = BASE_DIR / 'media'
+
 import os
 from dotenv import load_dotenv
 

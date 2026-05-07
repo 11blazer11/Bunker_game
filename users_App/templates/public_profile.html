@@ -1,13 +1,13 @@
 {% extends "base.html" %}
-{% block title %}Account — PartyUp{% endblock %}
+{% block title %}{{ target_user.username }} — PartyUp{% endblock %}
 
 {% block extra_head %}
 <style>
   .avatar-ring {
-    width: 80px; height: 80px; border-radius: 50%;
+    width: 90px; height: 90px; border-radius: 50%;
     background: linear-gradient(135deg, var(--gold), var(--teal));
     display: flex; align-items: center; justify-content: center;
-    font-family: var(--font-head); font-size: 2rem; font-weight: 800; color: #000;
+    font-family: var(--font-head); font-size: 2.2rem; font-weight: 800; color: #000;
     flex-shrink: 0; overflow: hidden;
   }
   .avatar-ring img { width: 100%; height: 100%; object-fit: cover; }
@@ -24,50 +24,40 @@
   .info-row:last-child { border-bottom: none; }
   .info-lbl { font-size: .8rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
   .info-val { font-size: .95rem; font-weight: 500; color: var(--text); }
-  .danger-zone { border-color: rgba(232,69,69,.3); }
-  .danger-zone .card-title {
-    font-family: var(--font-head); font-size: 1rem; font-weight: 700;
-    color: var(--red); letter-spacing: .06em; text-transform: uppercase;
-    margin-bottom: 1rem;
-  }
 </style>
 {% endblock extra_head %}
 
 {% block content %}
 <div class="page-header anim">
   <div>
-    <h1>Account</h1>
-    <p class="subtitle">Manage your profile settings</p>
+    <h1>{{ target_user.username }}</h1>
+    <p class="subtitle">Player profile</p>
   </div>
 </div>
 
-<div class="card anim anim-d1" style="margin-bottom:1rem;">
+<div class="card anim anim-d1">
   <div class="profile-header">
     <div class="avatar-ring">
-      {% if request.user.profile.avatar %}
-        <img src="{{ request.user.profile.avatar.url }}" alt="avatar" />
+      {% if profile.avatar %}
+        <img src="{{ profile.avatar.url }}" alt="avatar" />
       {% else %}
-        {{ request.user.username|first|upper }}
+        {{ target_user.username|first|upper }}
       {% endif %}
     </div>
     <div class="profile-info">
-      <h2>{{ request.user.username }}</h2>
-      <p>Member since {{ request.user.date_joined|date:"F Y" }}</p>
+      <h2>{{ target_user.username }}</h2>
+      <p>Member since {{ target_user.date_joined|date:"F Y" }}</p>
     </div>
   </div>
 
   <div class="info-row">
     <span class="info-lbl">Username</span>
-    <span class="info-val">{{ request.user.username }}</span>
-  </div>
-  <div class="info-row">
-    <span class="info-lbl">Email</span>
-    <span class="info-val">{{ request.user.email }}</span>
+    <span class="info-val">{{ target_user.username }}</span>
   </div>
   <div class="info-row">
     <span class="info-lbl">Status</span>
     <span class="info-val">
-      {% if request.user.is_active %}
+      {% if target_user.is_active %}
         <span class="badge badge-teal">Active</span>
       {% else %}
         <span class="badge badge-muted">Inactive</span>
@@ -75,26 +65,14 @@
     </span>
   </div>
   <div class="info-row">
-    <span class="info-lbl">Account Type</span>
-    <span class="info-val">
-      {% if request.user.is_staff %}
-        <span class="badge badge-gold">Staff</span>
-      {% else %}
-        <span class="badge badge-muted">Standard</span>
-      {% endif %}
-    </span>
+    <span class="info-lbl">Member Since</span>
+    <span class="info-val">{{ target_user.date_joined|date:"F Y" }}</span>
   </div>
 
+  {% if target_user == request.user %}
   <div style="margin-top:1.5rem;">
     <a href="{% url 'edit_profile' %}" class="btn btn-primary btn-sm">Edit Profile</a>
   </div>
-</div>
-
-<div class="card anim anim-d2 danger-zone">
-  <div class="card-title">Danger Zone</div>
-  <p style="color:var(--muted); font-size:.88rem; margin-bottom:1rem;">
-    Once you log out, you'll need your credentials to sign back in.
-  </p>
-  <a href="{% url 'logout' %}" class="btn btn-danger btn-sm">Logout</a>
+  {% endif %}
 </div>
 {% endblock content %}

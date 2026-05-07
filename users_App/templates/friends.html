@@ -9,15 +9,21 @@
     display: flex; align-items: center; gap: .85rem;
     padding: .85rem .1rem;
     border-bottom: 1px solid var(--border);
+    text-decoration: none; color: inherit;
+    transition: background .15s;
+    border-radius: 6px;
+    padding-left: .4rem;
   }
   .user-pill:last-child { border-bottom: none; }
+  .user-pill:hover { background: rgba(255,255,255,.04); }
   .avatar-sm {
     width: 38px; height: 38px; border-radius: 50%;
     background: linear-gradient(135deg, var(--gold), var(--teal));
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-head); font-size: 1rem; font-weight: 800; color: #000;
-    flex-shrink: 0;
+    flex-shrink: 0; overflow: hidden;
   }
+  .avatar-sm img { width: 100%; height: 100%; object-fit: cover; }
   .user-name { font-weight: 500; flex: 1; }
   .user-actions { display: flex; gap: .4rem; }
  
@@ -57,7 +63,13 @@
       <div class="card-title">Pending Requests <span class="badge badge-gold">{{ friend_requests.count }}</span></div>
       {% for req in friend_requests %}
       <div class="req-pill">
-        <div class="avatar-sm">{{ req.from_user.username|first|upper }}</div>
+        <div class="avatar-sm">
+          {% if req.from_user.profile.avatar %}
+            <img src="{{ req.from_user.profile.avatar.url }}" alt="avatar" />
+          {% else %}
+            {{ req.from_user.username|first|upper }}
+          {% endif %}
+        </div>
         <div class="user-name">{{ req.from_user.username }}</div>
         <div class="user-actions">
           <a href="{% url 'accept_friend' req.id %}" class="btn btn-teal btn-sm">Accept</a>
@@ -74,19 +86,31 @@
         {% for fr in friends %}
           {% if fr.from_user == request.user %}
             {% with friend_user=fr.to_user %}
-            <div class="user-pill">
-              <div class="avatar-sm">{{ friend_user.username|first|upper }}</div>
+            <a href="{% url 'public_profile' friend_user.username %}" class="user-pill">
+              <div class="avatar-sm">
+                {% if friend_user.profile.avatar %}
+                  <img src="{{ friend_user.profile.avatar.url }}" alt="avatar" />
+                {% else %}
+                  {{ friend_user.username|first|upper }}
+                {% endif %}
+              </div>
               <span class="user-name">{{ friend_user.username }}</span>
               <span style="font-size:.8rem; color:var(--muted);">{{ friend_user.email }}</span>
-            </div>
+            </a>
             {% endwith %}
           {% else %}
             {% with friend_user=fr.from_user %}
-            <div class="user-pill">
-              <div class="avatar-sm">{{ friend_user.username|first|upper }}</div>
+            <a href="{% url 'public_profile' friend_user.username %}" class="user-pill">
+              <div class="avatar-sm">
+                {% if friend_user.profile.avatar %}
+                  <img src="{{ friend_user.profile.avatar.url }}" alt="avatar" />
+                {% else %}
+                  {{ friend_user.username|first|upper }}
+                {% endif %}
+              </div>
               <span class="user-name">{{ friend_user.username }}</span>
               <span style="font-size:.8rem; color:var(--muted);">{{ friend_user.email }}</span>
-            </div>
+            </a>
             {% endwith %}
           {% endif %}
         {% endfor %}

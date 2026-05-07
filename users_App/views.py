@@ -1,4 +1,4 @@
-from django.shortcuts import render, redirect
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login, logout, get_user_model
 from django.contrib.auth.hashers import make_password
@@ -122,37 +122,73 @@ def logout_view(request):
 
 @login_required_message
 def account_view(request):
+    Profile.objects.get_or_create(user=request.user)
     return render(request, 'account.html')
+ 
+ 
+@login_required_message
+def edit_profile_view(request):
+    profile, _ = Profile.objects.get_or_create(user=request.user)
+ 
+    if request.method == 'POST':
+        new_username = request.POST.get('username', '').strip()
+        avatar = request.FILES.get('avatar')
+ 
+        if new_username and new_username != request.user.username:
+            if User.objects.filter(username=new_username).exclude(id=request.user.id).exists():
+                messages.error(request, 'That username is already taken.')
+                return redirect('edit_profile')
+            request.user.username = new_username
+            request.user.save()
+ 
+        if avatar:
+            profile.avatar = avatar
+            profile.save()
+ 
+        messages.success(request, 'Profile updated successfully.')
+        return redirect('account')
+ 
+    return render(request, 'edit_profile.html', {'profile': profile})
+ 
+ 
+def public_profile_view(request, username):
+    target_user = get_object_or_404(User, username=username)
+    profile, _ = Profile.objects.get_or_create(user=target_user)
+    return render(request, 'public_profile.html', {
+        'target_user': target_user,
+        'profile': profile,
+    })
 
 
 @login_required_message
 def friends_view(request):
-    friends = Friend.objects.filter(
-        (Q(from_user=request.user) | Q(to_user=request.user)) & Q(status='accepted')
-    ).select_related('from_user', 'to_user')
-
-    friend_requests = Friend.objects.filter(to_user=request.user, status='pending').select_related('from_user')
-
     if request.method == 'POST':
-        username = request.POST.get('username')
+        username = request.POST.get('username', '').strip()
         if username:
             try:
-                friend_user = User.objects.get(username=username)
-                if friend_user != request.user:
-                    # Check if already friends or request exists
-                    existing = Friend.objects.filter(
-                        (Q(from_user=request.user, to_user=friend_user) | Q(from_user=friend_user, to_user=request.user))
-                    ).first()
-                    if not existing:
-                        Friend.objects.create(from_user=request.user, to_user=friend_user)
-                        messages.success(request, f'Friend request sent to {username}')
-                    else:
-                        messages.warning(request, 'Friend request already exists or you are already friends.')
+                to_user = User.objects.get(username=username)
+                if to_user == request.user:
+                    messages.error(request, "You can't send a friend request to yourself.")
+                elif Friend.objects.filter(from_user=request.user, to_user=to_user).exists():
+                    messages.warning(request, 'Friend request already sent.')
+                elif Friend.objects.filter(from_user=to_user, to_user=request.user).exists():
+                    messages.warning(request, 'This user already sent you a request.')
                 else:
-                    messages.error(request, 'You cannot add yourself as a friend.')
+                    Friend.objects.create(from_user=request.user, to_user=to_user)
+                    messages.success(request, f'Friend request sent to {to_user.username}.')
             except User.DoesNotExist:
-                messages.error(request, f'User {username} not found.')
-
+                messages.error(request, 'User not found.')
+        return redirect('friends')
+ 
+    friends = Friend.objects.filter(
+        (Q(from_user=request.user) | Q(to_user=request.user)) & Q(status='accepted')
+    ).select_related('from_user', 'to_user',
+                     'from_user__profile', 'to_user__profile')
+ 
+    friend_requests = Friend.objects.filter(
+        to_user=request.user, status='pending'
+    ).select_related('from_user', 'from_user__profile')
+ 
     return render(request, 'friends.html', {
         'friends': friends,
         'friend_requests': friend_requests,

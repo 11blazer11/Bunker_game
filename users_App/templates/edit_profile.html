@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+{% block title %}Edit Profile — PartyUp{% endblock %}
+
+{% block extra_head %}
+<style>
+  .avatar-preview {
+    width: 90px; height: 90px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 2.2rem; font-weight: 800; color: #000;
+    overflow: hidden; margin-bottom: 1rem;
+  }
+  .avatar-preview img { width: 100%; height: 100%; object-fit: cover; }
+  .upload-label {
+    display: inline-block; cursor: pointer;
+    padding: .45rem 1rem; border-radius: 6px;
+    border: 1px solid var(--border); color: var(--muted);
+    font-size: .85rem; transition: border-color .2s;
+  }
+  .upload-label:hover { border-color: var(--gold); color: var(--text); }
+  #avatar-input { display: none; }
+  #file-name { font-size: .8rem; color: var(--muted); margin-top: .4rem; }
+</style>
+{% endblock extra_head %}
+
+{% block content %}
+<div class="page-header anim">
+  <div>
+    <h1>Edit Profile</h1>
+    <p class="subtitle">Update your username and avatar</p>
+  </div>
+</div>
+
+<div class="card anim anim-d1" style="max-width:480px;">
+  <form method="POST" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    <div style="margin-bottom:1.5rem;">
+      <div class="info-lbl" style="margin-bottom:.75rem;">Profile Picture</div>
+      <div class="avatar-preview" id="avatar-preview">
+        {% if profile.avatar %}
+          <img src="{{ profile.avatar.url }}" alt="avatar" />
+        {% else %}
+          {{ request.user.username|first|upper }}
+        {% endif %}
+      </div>
+      <label class="upload-label" for="avatar-input">Choose image</label>
+      <input type="file" id="avatar-input" name="avatar" accept="image/*" />
+      <div id="file-name">No file chosen</div>
+    </div>
+
+    <div class="field" style="margin-bottom:1.5rem;">
+      <label for="username">Username</label>
+      <input type="text" id="username" name="username"
+             value="{{ request.user.username }}" required />
+    </div>
+
+    <div style="display:flex; gap:.75rem;">
+      <button type="submit" class="btn btn-primary">Save Changes</button>
+      <a href="{% url 'account' %}" class="btn btn-outline">Cancel</a>
+    </div>
+  </form>
+</div>
+
+<script>
+  const input = document.getElementById('avatar-input');
+  const preview = document.getElementById('avatar-preview');
+  const fileName = document.getElementById('file-name');
+
+  input.addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    fileName.textContent = file.name;
+    const reader = new FileReader();
+    reader.onload = e => {
+      preview.innerHTML = `<img src="${e.target.result}" style="width:100%;height:100%;object-fit:cover;" />`;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
+{% endblock content %}
