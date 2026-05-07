@@ -1,10 +1,10 @@
 {% extends "base.html" %}
 {% block title %}Friends — PartyUp{% endblock %}
-
+ 
 {% block extra_head %}
 <style>
   .friends-layout { display: grid; grid-template-columns: 1fr 340px; gap: 1.5rem; align-items: start; }
-
+ 
   .user-pill {
     display: flex; align-items: center; gap: .85rem;
     padding: .85rem .1rem;
@@ -20,27 +20,27 @@
   }
   .user-name { font-weight: 500; flex: 1; }
   .user-actions { display: flex; gap: .4rem; }
-
+ 
   .req-pill {
     display: flex; align-items: center; gap: .85rem;
     padding: .85rem .1rem;
     border-bottom: 1px solid var(--border);
   }
   .req-pill:last-child { border-bottom: none; }
-
+ 
   .sidebar-card { position: sticky; top: 80px; }
   .card-title {
     font-family: var(--font-head); font-size: .9rem; letter-spacing: .09em;
     text-transform: uppercase; color: var(--muted); margin-bottom: 1rem;
   }
-
+ 
   @media (max-width: 700px) {
     .friends-layout { grid-template-columns: 1fr; }
     .sidebar-card { position: static; }
   }
 </style>
-{% endblock %}
-
+{% endblock extra_head %}
+ 
 {% block content %}
 <div class="page-header anim">
   <div>
@@ -48,13 +48,13 @@
     <p class="subtitle">Manage your connections</p>
   </div>
 </div>
-
+ 
 <div class="friends-layout">
   <!-- Left: friend list + requests -->
   <div>
     {% if friend_requests %}
     <div class="card anim anim-d1" style="margin-bottom:1rem; border-color: rgba(245,166,35,.3);">
-      <div class="card-title">⏳ Pending Requests <span class="badge badge-gold">{{ friend_requests.count }}</span></div>
+      <div class="card-title">Pending Requests <span class="badge badge-gold">{{ friend_requests.count }}</span></div>
       {% for req in friend_requests %}
       <div class="req-pill">
         <div class="avatar-sm">{{ req.from_user.username|first|upper }}</div>
@@ -67,7 +67,7 @@
       {% endfor %}
     </div>
     {% endif %}
-
+ 
     <div class="card anim anim-d2">
       <div class="card-title">Friends <span class="badge badge-muted">{{ friends.count }}</span></div>
       {% if friends %}
@@ -98,7 +98,7 @@
       {% endif %}
     </div>
   </div>
-
+ 
   <!-- Right: Add friend -->
   <div class="sidebar-card anim anim-d3">
     <div class="card">
@@ -117,4 +117,4 @@
     </div>
   </div>
 </div>
-{% endblock %}
+{% endblock content %}

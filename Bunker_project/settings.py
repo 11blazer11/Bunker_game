@@ -38,8 +38,9 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'widget_tweaks',
- 
-    "Bunker_App",
+
+    'users_App',
+    'Bunker_App',
 ]
 
 #argon2
