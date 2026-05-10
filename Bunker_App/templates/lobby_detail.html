@@ -1,12 +1,11 @@
 {% extends "base.html" %}
 {% block title %}{{ lobby.name }} — PartyUp{% endblock %}
-
+ 
 {% block extra_head %}
 <style>
   .lobby-hero {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
-    padding: 1.8rem 2rem;
-    margin-bottom: 1.5rem;
+    padding: 1.8rem 2rem; margin-bottom: 1.5rem;
     position: relative; overflow: hidden;
   }
   .lobby-hero::before {
@@ -26,8 +25,7 @@
   }
   .lobby-code-tag:hover { background: rgba(245,166,35,.2); }
   .lobby-actions-bar { display: flex; gap: .6rem; flex-wrap: wrap; }
-
-  /* participants */
+ 
   .participants-grid {
     display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
     gap: .7rem; margin-bottom: 2rem;
@@ -42,7 +40,9 @@
     width: 42px; height: 42px; border-radius: 50%; flex-shrink: 0;
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: #000;
+    overflow: hidden;
   }
+  .p-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .p-info { flex: 1; min-width: 0; }
   .p-name { font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .kick-btn {
@@ -52,13 +52,11 @@
     transition: color .15s, background .15s;
   }
   .kick-btn:hover { color: var(--red); background: rgba(232,69,69,.1); }
-
-  /* invite panel */
+ 
   .invite-list { display: flex; flex-direction: column; gap: .5rem; }
   .invite-row {
     display: flex; align-items: center; gap: .75rem;
-    padding: .6rem 0;
-    border-bottom: 1px solid var(--border);
+    padding: .6rem 0; border-bottom: 1px solid var(--border);
   }
   .invite-row:last-child { border-bottom: none; }
   .i-avatar {
@@ -66,9 +64,11 @@
     display: flex; align-items: center; justify-content: center;
     font-family: var(--font-head); font-size: .9rem; font-weight: 800; color: #000;
     background: linear-gradient(135deg, var(--gold), var(--teal));
+    overflow: hidden;
   }
+  .i-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .i-name { flex: 1; font-size: .9rem; }
-
+ 
   .section-title {
     font-family: var(--font-head); font-size: 1rem; letter-spacing: .08em;
     text-transform: uppercase; color: var(--muted);
@@ -76,8 +76,8 @@
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
 </style>
-{% endblock %}
-
+{% endblock extra_head %}
+ 
 {% block content %}
 <div class="lobby-hero anim">
   <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:1rem;">
@@ -95,19 +95,17 @@
       </div>
     </div>
   </div>
-
+ 
   <hr class="divider" />
-
+ 
   <div class="lobby-actions-bar">
     {% if request.user == lobby.creator and lobby.status == 'waiting' %}
-    <!-- Start Game -->
     <a href="{% url 'start_game' lobby.id %}" class="btn btn-primary btn-sm"
       onclick="return confirm('Start game for all {{ lobby.participants.count }} players?')">
       🎮 Start Game
     </a>
     {% endif %}
-
-    <!-- Leave -->
+ 
     <form method="POST">
       {% csrf_token %}
       <input type="hidden" name="action" value="leave" />
@@ -116,9 +114,8 @@
         🚪 Leave
       </button>
     </form>
-
+ 
     {% if request.user == lobby.creator %}
-    <!-- Delete -->
     <form method="POST">
       {% csrf_token %}
       <input type="hidden" name="action" value="delete" />
@@ -130,19 +127,22 @@
     {% endif %}
   </div>
 </div>
-
+ 
 <!-- Participants -->
 <div class="section-title anim anim-d1">
   Participants
   <span class="badge badge-muted">{{ lobby.participants.count }}</span>
 </div>
-
+ 
 <div class="participants-grid anim anim-d1">
   {% for participant in lobby.participants.all %}
   <div class="participant-card">
-    <div class="p-avatar"
-      style="background: {% cycle 'linear-gradient(135deg,#f5a623,#e87c23)' 'linear-gradient(135deg,#2de0c4,#1a9e8e)' 'linear-gradient(135deg,#a78bfa,#7c3aed)' 'linear-gradient(135deg,#f472b6,#be185d)' %};">
-      {{ participant.username|first|upper }}
+    <div class="p-avatar" style="background: linear-gradient(135deg, var(--gold), var(--teal));">
+      {% if participant.profile.avatar %}
+        <img src="{{ participant.profile.avatar.url }}" alt="avatar" />
+      {% else %}
+        {{ participant.username|first|upper }}
+      {% endif %}
     </div>
     <div class="p-info">
       <div class="p-name">{{ participant.username }}</div>
@@ -153,7 +153,7 @@
         <span class="badge badge-teal" style="font-size:.7rem;">You</span>
       {% endif %}
     </div>
-
+ 
     {% if request.user == lobby.creator and participant != request.user %}
     <form method="POST" style="position:absolute;top:.4rem;right:.4rem;">
       {% csrf_token %}
@@ -166,7 +166,7 @@
   </div>
   {% endfor %}
 </div>
-
+ 
 <!-- Invite Friends -->
 {% if friends %}
 <div class="section-title anim anim-d2">Invite Friends</div>
@@ -176,7 +176,13 @@
       {% if fr.from_user == request.user %}{% with friend_user=fr.to_user %}
       {% if friend_user not in lobby.participants.all %}
       <div class="invite-row">
-        <div class="i-avatar">{{ friend_user.username|first|upper }}</div>
+        <div class="i-avatar">
+          {% if friend_user.profile.avatar %}
+            <img src="{{ friend_user.profile.avatar.url }}" alt="avatar" />
+          {% else %}
+            {{ friend_user.username|first|upper }}
+          {% endif %}
+        </div>
         <span class="i-name">{{ friend_user.username }}</span>
         <form method="POST" action="{% url 'send_lobby_invitation' lobby.id %}">
           {% csrf_token %}
@@ -188,7 +194,13 @@
       {% endwith %}{% else %}{% with friend_user=fr.from_user %}
       {% if friend_user not in lobby.participants.all %}
       <div class="invite-row">
-        <div class="i-avatar">{{ friend_user.username|first|upper }}</div>
+        <div class="i-avatar">
+          {% if friend_user.profile.avatar %}
+            <img src="{{ friend_user.profile.avatar.url }}" alt="avatar" />
+          {% else %}
+            {{ friend_user.username|first|upper }}
+          {% endif %}
+        </div>
         <span class="i-name">{{ friend_user.username }}</span>
         <form method="POST" action="{% url 'send_lobby_invitation' lobby.id %}">
           {% csrf_token %}
@@ -202,4 +214,4 @@
   </div>
 </div>
 {% endif %}
-{% endblock %}
+{% endblock content %}

@@ -1,38 +1,37 @@
 {% extends "base.html" %}
 {% block title %}Home — PartyUp{% endblock %}
-
+ 
 {% block extra_head %}
 <style>
   .hero { margin-bottom: 2.5rem; }
+  .hero-top { display: flex; align-items: center; gap: 1.2rem; margin-bottom: .5rem; }
+  .hero-avatar {
+    width: 56px; height: 56px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: #000;
+    overflow: hidden; flex-shrink: 0;
+  }
+  .hero-avatar img { width: 100%; height: 100%; object-fit: cover; }
   .hero-greeting { font-size: 1rem; color: var(--muted); letter-spacing: .04em; text-transform: uppercase; margin-bottom: .3rem; }
   .hero h1 { font-size: 3rem; }
-
-  .stat-bar {
-    display: flex; gap: 1.5rem;
-    margin-top: 1rem;
-    flex-wrap: wrap;
-  }
+ 
+  .stat-bar { display: flex; gap: 1.5rem; margin-top: 1rem; flex-wrap: wrap; }
   .stat { display: flex; flex-direction: column; gap: .1rem; }
   .stat-val { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--gold); }
   .stat-lbl { font-size: .78rem; color: var(--muted); text-transform: uppercase; letter-spacing: .07em; }
-
+ 
   .section-title {
-    font-family: var(--font-head);
-    font-size: 1.15rem;
-    letter-spacing: .08em;
-    text-transform: uppercase;
-    color: var(--muted);
-    margin-bottom: .9rem;
-    display: flex; align-items: center; gap: .6rem;
+    font-family: var(--font-head); font-size: 1.15rem; letter-spacing: .08em;
+    text-transform: uppercase; color: var(--muted);
+    margin-bottom: .9rem; display: flex; align-items: center; gap: .6rem;
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-
-  /* action cards */
+ 
   .action-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: .9rem; margin-bottom: 2.5rem; }
   .action-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-    padding: 1.4rem 1.2rem;
-    text-decoration: none; color: var(--text);
+    padding: 1.4rem 1.2rem; text-decoration: none; color: var(--text);
     transition: border-color .2s, transform .2s, box-shadow .2s;
     display: flex; flex-direction: column; gap: .5rem;
   }
@@ -40,38 +39,29 @@
   .action-icon { font-size: 1.8rem; }
   .action-title { font-family: var(--font-head); font-size: 1.1rem; font-weight: 700; letter-spacing: .04em; }
   .action-desc { font-size: .82rem; color: var(--muted); }
-
-  /* lobby cards */
+ 
   .lobby-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 10px;
-    padding: 1.2rem 1.4rem;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 1rem;
-    transition: border-color .2s;
+    padding: 1.2rem 1.4rem; display: flex; align-items: center; justify-content: space-between;
+    gap: 1rem; transition: border-color .2s;
   }
-  .lobby-card:hover { border-color: var(--border); }
   .lobby-info { flex: 1; min-width: 0; }
   .lobby-name {
-    font-family: var(--font-head); font-size: 1.15rem; font-weight: 700;
-    letter-spacing: .04em;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: .25rem;
+    font-family: var(--font-head); font-size: 1.15rem; font-weight: 700; letter-spacing: .04em;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: .25rem;
   }
   .lobby-meta { font-size: .82rem; color: var(--muted); display: flex; gap: .75rem; flex-wrap: wrap; }
   .lobby-actions { display: flex; gap: .5rem; flex-shrink: 0; }
-
-  /* invitation cards */
+ 
   .inv-card {
     background: var(--card); border: 1px solid var(--gold-dim); border-radius: 10px;
-    padding: 1.1rem 1.4rem;
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 1rem;
+    padding: 1.1rem 1.4rem; display: flex; align-items: center; justify-content: space-between; gap: 1rem;
   }
   .inv-info { flex: 1; }
   .inv-title { font-family: var(--font-head); font-size: 1.05rem; font-weight: 700; margin-bottom: .2rem; }
   .inv-meta { font-size: .82rem; color: var(--muted); }
   .inv-actions { display: flex; gap: .5rem; flex-shrink: 0; }
-
+ 
   @media (max-width: 640px) {
     .action-grid { grid-template-columns: 1fr 1fr; }
     .lobby-card, .inv-card { flex-direction: column; align-items: flex-start; }
@@ -79,12 +69,21 @@
     .lobby-actions .btn, .inv-actions .btn { flex: 1; text-align: center; }
   }
 </style>
-{% endblock %}
-
+{% endblock extra_head %}
+ 
 {% block content %}
 <div class="hero anim">
   <p class="hero-greeting">Welcome back</p>
-  <h1>{{ request.user.username }}</h1>
+  <div class="hero-top">
+    <div class="hero-avatar">
+      {% if request.user.profile.avatar %}
+        <img src="{{ request.user.profile.avatar.url }}" alt="avatar" />
+      {% else %}
+        {{ request.user.username|first|upper }}
+      {% endif %}
+    </div>
+    <h1>{{ request.user.username }}</h1>
+  </div>
   <div class="stat-bar">
     <div class="stat">
       <span class="stat-val">{{ user_lobbies.count }}</span>
@@ -96,7 +95,7 @@
     </div>
   </div>
 </div>
-
+ 
 <!-- Quick Actions -->
 <div class="section-title anim anim-d1">Quick Actions</div>
 <div class="action-grid anim anim-d1">
@@ -116,7 +115,7 @@
     <div class="action-desc">Browse open lobbies to join</div>
   </a>
 </div>
-
+ 
 <!-- Pending Invitations -->
 {% if pending_invitations %}
 <div class="section-title anim anim-d2">
@@ -138,7 +137,7 @@
   {% endfor %}
 </div>
 {% endif %}
-
+ 
 <!-- Your Lobbies -->
 <div class="section-title anim anim-d3">Your Lobbies</div>
 {% if user_lobbies %}
@@ -168,4 +167,5 @@
   </div>
 </div>
 {% endif %}
-{% endblock %}
+{% endblock content %}
+ 
