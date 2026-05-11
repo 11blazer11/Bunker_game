@@ -36,12 +36,15 @@ class Lobby(models.Model):
 
 
 class Game(models.Model):
+    id = models.AutoField(primary_key=True)
     lobby = models.ForeignKey(Lobby, on_delete=models.SET_NULL, null=True, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
 
     def __str__(self):
-        return f"Game for {self.lobby.name}"
+        if self.lobby:
+            return f"Game #{self.id} - {self.lobby.name}"
+        return f"Game #{self.id} (no lobby)"
 
 
 class PlayerCharacter(models.Model):
