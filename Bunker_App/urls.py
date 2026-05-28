@@ -2,7 +2,8 @@ from django.urls import path
 from .views import (
     main_view, create_party_view, find_party_view, join_party_view,
     lobby_detail_view, send_lobby_invitation_view, accept_lobby_invitation_view,
-    decline_lobby_invitation_view, start_game_view, game_detail_view, exit_game_view
+    decline_lobby_invitation_view, start_game_view, game_detail_view, exit_game_view,
+    reveal_characteristic_view
 )
 
 urlpatterns = [
@@ -17,4 +18,5 @@ urlpatterns = [
     path('invitation/<int:invitation_id>/decline/', decline_lobby_invitation_view, name='decline_lobby_invitation'),
     path('game/<int:game_id>/', game_detail_view, name='game_detail'),
     path('game/<int:game_id>/exit/', exit_game_view, name='exit_game'),
+    path('game/<int:game_id>/reveal/', reveal_characteristic_view, name='reveal_characteristic'),
 ]

@@ -3,7 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from .models import Lobby, LobbyInvitation, Game, PlayerCharacter
 from .charachteristics import *
-from .utils import login_required_message
+from .utils import login_required_message, redirect_if_in_game
 from users_App.models import Friend
 from django.db.models import Q
 import random
@@ -12,6 +12,7 @@ from .game_utils import generate_character
 MAX_LOBBY_PARTICIPANTS = 9
 
 
+@redirect_if_in_game
 @login_required_message
 def main_view(request):
     user_lobbies = request.user.joined_lobbies.all()
@@ -19,6 +20,7 @@ def main_view(request):
     return render(request, 'main_page.html', {'user_lobbies': user_lobbies, 'pending_invitations': pending_invitations})
 
 
+@redirect_if_in_game
 @login_required_message
 def join_party_view(request):
     if request.method == 'POST':
@@ -32,9 +34,10 @@ def join_party_view(request):
                 return redirect('lobby_detail', lobby_id=lobby.id)
 
             # Check if user is in an active game
-            if current_lobby and current_lobby.status in ['in_game', 'finished']:
-                messages.error(request, 'You cannot join a new lobby while in an active or finished game.')
-                return redirect('lobby_detail', lobby_id=current_lobby.id)
+            user_game = PlayerCharacter.objects.filter(player=request.user).first()
+            if user_game:
+                messages.error(request, 'You cannot join a new lobby while in an active game. Please exit your current game first.')
+                return redirect('game_detail', game_id=user_game.game.id)
 
             if current_lobby and request.POST.get('confirm') != 'true':
                 return render(request, 'join_party_confirm.html', {
@@ -66,14 +69,10 @@ def join_party_view(request):
     return render(request, 'join_party.html')
 
  
+@redirect_if_in_game
 @login_required_message
 def create_party_view(request):
     current_lobby = request.user.joined_lobbies.first()
-    
-    # Check if user is in an active game
-    if current_lobby and current_lobby.status in ['in_game', 'finished']:
-        messages.error(request, 'You cannot create a new lobby while in an active or finished game. You must exit the game first.')
-        return redirect('lobby_detail', lobby_id=current_lobby.id)
     
     if current_lobby and request.method != 'POST':
         return render(request, 'create_party_confirm.html', {'current_lobby': current_lobby})
@@ -95,6 +94,7 @@ def create_party_view(request):
 
 
 
+@redirect_if_in_game
 @login_required_message
 def find_party_view(request):
     query = request.GET.get('search_query')
@@ -218,13 +218,14 @@ def accept_lobby_invitation_view(request, invitation_id):
         invitation = LobbyInvitation.objects.get(id=invitation_id, invitee=request.user, status='pending')
         lobby = invitation.lobby
         
+        # Check if user is in an active game
+        user_game = PlayerCharacter.objects.filter(player=request.user).first()
+        if user_game:
+            messages.error(request, 'You cannot join a new lobby while in an active game. Please exit your current game first.')
+            return redirect('game_detail', game_id=user_game.game.id)
+        
         # Check if lobby still exists and user is not already in another lobby
         current_lobby = request.user.joined_lobbies.first()
-        
-        # Check if user is in an active game
-        if current_lobby and current_lobby != lobby and current_lobby.status in ['in_game', 'finished']:
-            messages.error(request, 'You cannot join a new lobby while in an active or finished game. You must exit the game first.')
-            return redirect('lobby_detail', lobby_id=current_lobby.id)
         
         if current_lobby and current_lobby != lobby:
             if current_lobby.status == 'waiting':
@@ -283,8 +284,13 @@ def start_game_view(request, lobby_id):
             messages.info(request, 'Game already started.')
             return redirect('game_detail', game_id=existing_game.id)
         
-        # Snapshot participants BEFORE deleting the lobby
+        # Check if any participant is already in another game
         participants = list(lobby.participants.all())
+        for participant in participants:
+            existing_player_char = PlayerCharacter.objects.filter(player=participant).first()
+            if existing_player_char:
+                messages.error(request, f'{participant.username} is already in another game. All participants must exit their games before starting a new one.')
+                return redirect('lobby_detail', lobby_id=lobby_id)
 
         # Create game and assign characters to all participants
         game = Game.objects.create(lobby=lobby)
@@ -331,12 +337,18 @@ def game_detail_view(request, game_id):
             return redirect('main')
         
         # Get all characters for display
-        all_characters = game.player_characters.all().select_related('player')
+        all_characters = game.player_characters.all().select_related('player').order_by('id')
+        
+        # Get current player whose turn it is
+        current_player = game.get_current_player()
+        is_current_player_turn = (current_player and current_player.player == request.user)
         
         return render(request, 'game_detail.html', {
             'game': game,
             'player_character': player_character,
             'all_characters': all_characters,
+            'current_player': current_player,
+            'is_current_player_turn': is_current_player_turn,
         })
     
     except Game.DoesNotExist:
@@ -367,6 +379,63 @@ def exit_game_view(request, game_id):
             game.delete()
         
         return redirect('main')
+    except Game.DoesNotExist:
+        messages.error(request, 'Game does not exist.')
+        return redirect('main')
+
+
+@login_required_message
+def reveal_characteristic_view(request, game_id):
+    """Reveal a chosen characteristic for the current player"""
+    try:
+        game = Game.objects.get(id=game_id)
+        
+        # Get the current player's turn
+        current_player = game.get_current_player()
+        
+        if current_player is None:
+            messages.error(request, 'Invalid game state.')
+            return redirect('game_detail', game_id=game_id)
+        
+        # Check if it's the current player's turn
+        if current_player.player != request.user:
+            messages.error(request, 'It is not your turn.')
+            return redirect('game_detail', game_id=game_id)
+        
+        # Get the characteristic type to reveal
+        char_type = request.POST.get('char_type')
+        
+        if not char_type:
+            messages.error(request, 'Please select a characteristic to reveal.')
+            return redirect('game_detail', game_id=game_id)
+        
+        # Validate that this characteristic exists for the player
+        valid_char_types = [c[0] for c in current_player.characteristics]
+        if char_type not in valid_char_types:
+            messages.error(request, 'Invalid characteristic.')
+            return redirect('game_detail', game_id=game_id)
+        
+        # Check if already revealed
+        if char_type in current_player.revealed_characteristics:
+            messages.warning(request, 'That characteristic has already been revealed!')
+            return redirect('game_detail', game_id=game_id)
+        
+        # Reveal the characteristic
+        current_player.reveal_characteristic(char_type)
+        
+        # Find the value to show in message
+        char_value = None
+        for c_type, c_value, c_quality in current_player.characteristics:
+            if c_type == char_type:
+                char_value = c_value
+                break
+        
+        messages.success(request, f'✨ Revealed: {char_type.replace("_", " ").title()} - {char_value}')
+        
+        # Move to next player's turn
+        game.next_turn()
+        
+        return redirect('game_detail', game_id=game_id)
     except Game.DoesNotExist:
         messages.error(request, 'Game does not exist.')
         return redirect('main')
