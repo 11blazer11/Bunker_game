@@ -1,7 +1,9 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import Lobby, LobbyInvitation, Game, PlayerCharacter
+from .models import Lobby, LobbyInvitation, Game, PlayerCharacter, GameMessage
+from django.http import JsonResponse
+import json
 from .charachteristics import *
 from .utils import login_required_message, redirect_if_in_game
 from users_App.models import Friend
@@ -432,6 +434,19 @@ def reveal_characteristic_view(request, game_id):
         
         messages.success(request, f'✨ Revealed: {char_type.replace("_", " ").title()} - {char_value}')
         
+        # Post a system message to the game chat so everyone sees it
+        quality_label = ''
+        for c_type, c_value, c_quality in current_player.characteristics:
+            if c_type == char_type:
+                quality_label = c_quality
+                break
+        system_text = (
+            f"__REVEAL__{request.user.username}|"
+            f"{char_type.replace('_', ' ').title()}|"
+            f"{char_value}|{quality_label}"
+        )
+        GameMessage.objects.create(game=game, player=request.user, text=system_text)
+ 
         # Move to next player's turn
         game.next_turn()
         
@@ -439,3 +454,67 @@ def reveal_characteristic_view(request, game_id):
     except Game.DoesNotExist:
         messages.error(request, 'Game does not exist.')
         return redirect('main')
+ 
+@login_required_message
+def chat_send_view(request, game_id):
+    """Send a chat message in a game (AJAX POST)"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        game = Game.objects.get(id=game_id)
+        # Only participants can chat
+        if not game.player_characters.filter(player=request.user).exists():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+        try:
+            body = json.loads(request.body)
+            text = body.get('text', '').strip()
+        except (json.JSONDecodeError, AttributeError):
+            text = request.POST.get('text', '').strip()
+        if not text:
+            return JsonResponse({'error': 'Empty message'}, status=400)
+        if len(text) > 500:
+            return JsonResponse({'error': 'Message too long'}, status=400)
+        msg = GameMessage.objects.create(game=game, player=request.user, text=text)
+        avatar_url = ''
+        if hasattr(request.user, 'profile') and request.user.profile.avatar:
+            avatar_url = request.user.profile.avatar.url
+        return JsonResponse({
+            'id': msg.id,
+            'username': request.user.username,
+            'text': msg.text,
+            'avatar_url': avatar_url,
+            'is_you': True,
+            'time': msg.created_at.strftime('%H:%M'),
+        })
+    except Game.DoesNotExist:
+        return JsonResponse({'error': 'Game not found'}, status=404)
+ 
+ 
+@login_required_message
+def chat_poll_view(request, game_id):
+    """Poll for new messages since a given message id (AJAX GET)"""
+    try:
+        game = Game.objects.get(id=game_id)
+        if not game.player_characters.filter(player=request.user).exists():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+        since_id = int(request.GET.get('since', 0))
+        msgs = GameMessage.objects.filter(game=game, id__gt=since_id).select_related('player__profile')
+        data = []
+        for msg in msgs:
+            is_system = msg.text.startswith('__REVEAL__')
+            avatar_url = ''
+            if hasattr(msg.player, 'profile') and msg.player.profile.avatar:
+                avatar_url = msg.player.profile.avatar.url
+            data.append({
+                'id': msg.id,
+                'username': msg.player.username,
+                'text': msg.text,
+                'avatar_url': avatar_url,
+                'is_you': msg.player == request.user,
+                'is_system': is_system,
+                'time': msg.created_at.strftime('%H:%M'),
+            })
+        return JsonResponse({'messages': data})
+    except Game.DoesNotExist:
+        return JsonResponse({'error': 'Game not found'}, status=404)
+ 

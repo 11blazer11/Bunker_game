@@ -103,3 +103,15 @@ class PlayerCharacter(models.Model):
             if char_type in self.revealed_characteristics:
                 revealed.append((char_type, char_value, quality))
         return revealed
+    
+class GameMessage(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='messages')
+    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='game_messages')
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.player.username}: {self.text[:40]}"

@@ -437,6 +437,144 @@
     font-style: italic;
     padding: 2rem 1rem;
   }
+
+  /* ── Chat ── */
+  .chat-panel {
+    position: fixed; bottom: 1.5rem; right: 1.5rem;
+    width: 340px; z-index: 500;
+    display: flex; flex-direction: column;
+    border-radius: 12px; overflow: hidden;
+    box-shadow: 0 8px 40px rgba(0,0,0,.7);
+    border: 1px solid var(--border);
+    max-height: 480px; background: var(--card);
+    transition: max-height .3s ease;
+  }
+  .chat-panel.collapsed { max-height: 50px; }
+  .chat-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: .75rem 1rem; background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    cursor: pointer; user-select: none; flex-shrink: 0;
+  }
+  .chat-header-title {
+    font-family: var(--font-head); font-weight: 700;
+    font-size: .95rem; letter-spacing: .06em;
+    color: var(--teal); display: flex; align-items: center; gap: .5rem;
+  }
+  .chat-unread {
+    background: var(--red); color: #fff;
+    border-radius: 99px; font-size: .7rem; font-weight: 700;
+    padding: .1rem .45rem; display: none;
+  }
+  .chat-toggle-btn {
+    background: none; border: none; color: var(--muted);
+    font-size: 1.1rem; cursor: pointer; transition: color .2s; padding: 0;
+  }
+  .chat-toggle-btn:hover { color: var(--gold); }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: .75rem;
+    display: flex; flex-direction: column; gap: .5rem;
+    min-height: 200px; background: var(--card);
+  }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  .chat-msg { display: flex; gap: .5rem; align-items: flex-end; }
+  .chat-msg.me { flex-direction: row-reverse; }
+  .chat-msg-avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: .8rem; font-weight: 800; color: #000;
+    overflow: hidden;
+  }
+  .chat-msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-msg-body { max-width: 75%; }
+  .chat-msg-name { font-size: .65rem; color: var(--muted); margin-bottom: .2rem; font-weight: 600; }
+  .chat-msg.me .chat-msg-name { text-align: right; }
+  .chat-msg-bubble {
+    padding: .45rem .75rem; border-radius: 10px;
+    font-size: .82rem; line-height: 1.4; word-break: break-word;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text);
+  }
+  .chat-msg.me .chat-msg-bubble {
+    background: rgba(45,224,196,.15); border-color: var(--teal);
+  }
+  .chat-msg-time { font-size: .6rem; color: var(--muted); margin-top: .2rem; }
+  .chat-msg.me .chat-msg-time { text-align: right; }
+  .chat-input-row {
+    display: flex; gap: .5rem; padding: .65rem;
+    border-top: 1px solid var(--border);
+    background: var(--surface); flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: 6px; color: var(--text);
+    font-family: var(--font-body); font-size: .85rem;
+    padding: .45rem .75rem; outline: none; transition: border-color .2s;
+  }
+  .chat-input:focus { border-color: var(--teal); }
+  .chat-send-btn {
+    background: var(--teal); color: #000; border: none;
+    border-radius: 6px; padding: .45rem .9rem;
+    font-family: var(--font-head); font-weight: 700; font-size: .85rem;
+    cursor: pointer; transition: background .2s, transform .1s; flex-shrink: 0;
+  }
+  .chat-send-btn:hover { background: #4ffae5; }
+  .chat-send-btn:active { transform: scale(.95); }
+  .chat-empty {
+    text-align: center; color: var(--muted);
+    font-size: .8rem; padding: 1.5rem .5rem; font-style: italic;
+  }
+
+  /* system reveal message in chat */
+  .chat-msg-system {
+    display: flex; align-items: center; justify-content: center;
+    gap: .5rem; padding: .5rem .75rem; margin: .25rem 0;
+    border-radius: 8px; font-size: .78rem; font-weight: 600;
+    text-align: center; letter-spacing: .02em;
+  }
+  .chat-msg-system.good {
+    background: rgba(45,224,196,.12); border: 1px solid rgba(45,224,196,.3); color: var(--teal);
+  }
+  .chat-msg-system.bad {
+    background: rgba(232,69,69,.12); border: 1px solid rgba(232,69,69,.3); color: var(--red);
+  }
+
+  /* floating notification banner */
+  #revealNotification {
+    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-120%);
+    z-index: 9999;
+    background: var(--card); border: 2px solid var(--gold);
+    border-radius: 12px; padding: 1rem 1.75rem;
+    box-shadow: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(245,166,35,.2);
+    display: flex; align-items: center; gap: 1rem;
+    min-width: 280px; max-width: 420px;
+    transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+    opacity: 0; pointer-events: none;
+  }
+  #revealNotification.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+  .reveal-notif-icon { font-size: 2rem; flex-shrink: 0; }
+  .reveal-notif-body { flex: 1; }
+  .reveal-notif-title {
+    font-family: var(--font-head); font-size: .75rem; font-weight: 700;
+    text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .2rem;
+  }
+  .reveal-notif-who {
+    font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: var(--gold);
+  }
+  .reveal-notif-what {
+    font-size: .85rem; color: var(--text); margin-top: .15rem;
+  }
+  .reveal-notif-what strong { color: var(--teal); }
+  .reveal-notif-what.bad strong { color: var(--red); }
+
+  @media (max-width: 640px) {
+    .chat-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 1rem; }
+    #revealNotification { min-width: calc(100vw - 3rem); max-width: calc(100vw - 3rem); }
+  }
 </style>
 {% endblock extra_head %}
  
@@ -605,6 +743,36 @@
   </div>
 </div>
  
+<!-- ── Chat Panel ── -->
+<!-- Reveal notification banner -->
+<div id="revealNotification">
+  <div class="reveal-notif-icon" id="revealNotifIcon"></div>
+  <div class="reveal-notif-body">
+    <div class="reveal-notif-title">Characteristic Revealed</div>
+    <div class="reveal-notif-who" id="revealNotifWho"></div>
+    <div class="reveal-notif-what" id="revealNotifWhat"></div>
+  </div>
+</div>
+ 
+<div class="chat-panel" id="chatPanel">
+  <div class="chat-header" onclick="toggleChat()">
+    <div class="chat-header-title">
+      💬 Game Chat
+      <span class="chat-unread" id="chatUnread">0</span>
+    </div>
+    <button class="chat-toggle-btn" id="chatToggleBtn" title="Toggle chat">▼</button>
+  </div>
+  <div class="chat-messages" id="chatMessages">
+    <div class="chat-empty" id="chatEmpty">No messages yet. Say something!</div>
+  </div>
+  <div class="chat-input-row">
+    <input class="chat-input" id="chatInput" type="text" maxlength="500"
+           placeholder="Type a message…" autocomplete="off"
+           onkeydown="if(event.key==='Enter')sendChatMessage()">
+    <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
+  </div>
+</div>
+ 
 <!-- Character Modal -->
 <div id="characterModal" class="modal" onclick="if(event.target===this)closeCharacterModal()">
   <div class="modal-content">
@@ -717,6 +885,147 @@
     if (e.key === 'Escape') closeCharacterModal();
   });
 
-  setTimeout(() => { location.reload(); }, 30000);
+  // ── Chat ──
+  const GAME_ID = {{ game.id }};
+  const CSRF_TOKEN = '{{ csrf_token }}';
+  let chatCollapsed = false;
+  let lastMessageId = 0;
+  let unreadCount = 0;
+
+  function toggleChat() {
+    chatCollapsed = !chatCollapsed;
+    const panel = document.getElementById('chatPanel');
+    const btn = document.getElementById('chatToggleBtn');
+    panel.classList.toggle('collapsed', chatCollapsed);
+    btn.textContent = chatCollapsed ? '▲' : '▼';
+    if (!chatCollapsed) {
+      unreadCount = 0;
+      const badge = document.getElementById('chatUnread');
+      badge.style.display = 'none';
+      badge.textContent = '0';
+      scrollChatToBottom();
+    }
+  }
+
+  function scrollChatToBottom() {
+    const box = document.getElementById('chatMessages');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function escapeHTML(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+              .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+ 
+  function parseReveal(text) {
+    // Format: __REVEAL__username|CharType|Value|quality
+    if (!text.startsWith('__REVEAL__')) return null;
+    const parts = text.slice(10).split('|');
+    return { username: parts[0], charType: parts[1], value: parts[2], quality: parts[3] || 'good' };
+  }
+ 
+  let notifTimer = null;
+  function showRevealNotification(reveal) {
+    const notif = document.getElementById('revealNotification');
+    const icon = document.getElementById('revealNotifIcon');
+    const who = document.getElementById('revealNotifWho');
+    const what = document.getElementById('revealNotifWhat');
+ 
+    icon.textContent = reveal.quality === 'bad' ? '\u26a0\ufe0f' : '\u2728';
+    who.textContent = reveal.username + ' revealed:';
+    what.className = 'reveal-notif-what' + (reveal.quality === 'bad' ? ' bad' : '');
+    what.innerHTML = reveal.charType + ': <strong>' + escapeHTML(reveal.value) + '</strong>';
+ 
+    notif.classList.add('show');
+    if (notifTimer) clearTimeout(notifTimer);
+    notifTimer = setTimeout(() => notif.classList.remove('show'), 5000);
+  }
+ 
+  function buildMessageHTML(msg) {
+    if (msg.is_system) {
+      const reveal = parseReveal(msg.text);
+      if (reveal) {
+        const cls = reveal.quality === 'bad' ? 'bad' : 'good';
+        const icon = reveal.quality === 'bad' ? '\u26a0\ufe0f' : '\u2728';
+        return '<div class="chat-msg-system ' + cls + '">'
+          + icon + ' <strong>' + escapeHTML(reveal.username) + '</strong>'
+          + ' revealed <em>' + escapeHTML(reveal.charType) + '</em>'
+          + ': <strong>' + escapeHTML(reveal.value) + '</strong>'
+          + ' <span style="opacity:.6;font-size:.7rem;">' + msg.time + '</span>'
+          + '</div>';
+      }
+    }
+    const cls = msg.is_you ? 'chat-msg me' : 'chat-msg';
+    const avatarInner = msg.avatar_url
+      ? '<img src="' + msg.avatar_url + '" alt="' + escapeHTML(msg.username) + '">'
+      : escapeHTML(msg.username.charAt(0).toUpperCase());
+    return '<div class="' + cls + '">'
+      + '<div class="chat-msg-avatar">' + avatarInner + '</div>'
+      + '<div class="chat-msg-body">'
+      + '<div class="chat-msg-name">' + escapeHTML(msg.username) + ' · ' + msg.time + '</div>'
+      + '<div class="chat-msg-bubble">' + escapeHTML(msg.text) + '</div>'
+      + '</div></div>';
+  }
+ 
+  function appendMessages(msgs) {
+    if (!msgs.length) return;
+    const box = document.getElementById('chatMessages');
+    const empty = document.getElementById('chatEmpty');
+    if (empty) empty.remove();
+    const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 60;
+    msgs.forEach(msg => {
+      box.insertAdjacentHTML('beforeend', buildMessageHTML(msg));
+      if (msg.id > lastMessageId) lastMessageId = msg.id;
+      // Show notification for reveal messages from others
+      if (msg.is_system && !msg.is_you) {
+        const reveal = parseReveal(msg.text);
+        if (reveal) showRevealNotification(reveal);
+      }
+    });
+    if (atBottom || msgs.some(m => m.is_you)) scrollChatToBottom();
+    if (chatCollapsed) {
+      const newOthers = msgs.filter(m => !m.is_you && !m.is_system).length;
+      if (newOthers > 0) {
+        unreadCount += newOthers;
+        const badge = document.getElementById('chatUnread');
+        badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+        badge.style.display = 'inline';
+      }
+    }
+  }
+ 
+  async function sendChatMessage() {
+    const input = document.getElementById('chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    input.disabled = true;
+    try {
+      const resp = await fetch('/game/game/' + GAME_ID + '/chat/send/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_TOKEN },
+        body: JSON.stringify({ text }),
+      });
+      if (resp.ok) {
+        const msg = await resp.json();
+        appendMessages([msg]);
+      }
+    } catch (e) { console.error('Chat send error', e); }
+    finally { input.disabled = false; input.focus(); }
+  }
+ 
+  async function pollChat() {
+    try {
+      const resp = await fetch('/game/game/' + GAME_ID + '/chat/poll/?since=' + lastMessageId);
+      if (resp.ok) {
+        const data = await resp.json();
+        appendMessages(data.messages || []);
+      }
+    } catch (e) { /* network blip */ }
+    setTimeout(pollChat, 3000);
+  }
+ 
+  pollChat();
+  setTimeout(() => { location.reload(); }, 60000);
 </script>
 {% endblock content %}
