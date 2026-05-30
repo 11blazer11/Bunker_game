@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from django.contrib.auth.models import User
 from django.contrib import messages
-from .models import Lobby, LobbyInvitation, Game, PlayerCharacter, GameMessage
+from .models import Lobby, LobbyInvitation, Game, PlayerCharacter, GameMessage, LobbyMessage, Vote
 from django.http import JsonResponse
 import json
 from .charachteristics import *
@@ -351,6 +351,14 @@ def game_detail_view(request, game_id):
             'all_characters': all_characters,
             'current_player': current_player,
             'is_current_player_turn': is_current_player_turn,
+            'vote_phase': game.vote_phase,
+            'player_has_voted': Vote.objects.filter(
+                game=game, voter=request.user, round_number=game.round_number
+            ).exists(),
+            'votes_cast': Vote.objects.filter(
+                game=game, round_number=game.round_number
+            ).count(),
+            'total_players': game.player_characters.count(),
         })
     
     except Game.DoesNotExist:
@@ -518,3 +526,182 @@ def chat_poll_view(request, game_id):
     except Game.DoesNotExist:
         return JsonResponse({'error': 'Game not found'}, status=404)
  
+
+@login_required_message
+def vote_view(request, game_id):
+    """Cast a vote to expel a player (AJAX POST or regular POST)."""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        game = Game.objects.get(id=game_id)
+
+        if not game.player_characters.filter(player=request.user).exists():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+
+        if not game.vote_phase:
+            return JsonResponse({'error': 'Not in vote phase'}, status=400)
+
+        # Parse target
+        try:
+            body = json.loads(request.body)
+            target_id = body.get('target_id')
+        except (json.JSONDecodeError, AttributeError):
+            target_id = request.POST.get('target_id')
+
+        try:
+            target_user = User.objects.get(id=target_id)
+        except User.DoesNotExist:
+            return JsonResponse({'error': 'Target not found'}, status=404)
+
+        if not game.player_characters.filter(player=target_user).exists():
+            return JsonResponse({'error': 'Target not in game'}, status=400)
+
+        if target_user == request.user:
+            return JsonResponse({'error': 'Cannot vote for yourself'}, status=400)
+
+        # Idempotent – update if already voted this round
+        Vote.objects.update_or_create(
+            game=game, voter=request.user, round_number=game.round_number,
+            defaults={'target': target_user},
+        )
+
+        # Check if everyone has voted
+        total = game.player_characters.count()
+        votes_cast = Vote.objects.filter(game=game, round_number=game.round_number).count()
+        all_voted = votes_cast >= total
+
+        expelled_username = None
+        if all_voted:
+            # Tally votes
+            from django.db.models import Count
+            tally = (Vote.objects
+                     .filter(game=game, round_number=game.round_number)
+                     .values('target')
+                     .annotate(cnt=Count('target'))
+                     .order_by('-cnt'))
+            if tally:
+                top = tally[0]
+                expelled_user = User.objects.get(id=top['target'])
+                expelled_username = expelled_user.username
+
+                # Remove expelled player's character
+                game.player_characters.filter(player=expelled_user).delete()
+
+                # Post system message
+                GameMessage.objects.create(
+                    game=game, player=request.user,
+                    text=f'__EXPELLED__{expelled_username}'
+                )
+
+                # End vote phase, reset turn index safely
+                game.vote_phase = False
+                remaining = game.player_characters.count()
+                if remaining > 0:
+                    game.current_turn_index = game.current_turn_index % remaining
+                else:
+                    game.current_turn_index = 0
+                game.save()
+
+        return JsonResponse({
+            'ok': True,
+            'votes_cast': votes_cast,
+            'total': total,
+            'all_voted': all_voted,
+            'expelled': expelled_username,
+        })
+
+    except Game.DoesNotExist:
+        return JsonResponse({'error': 'Game not found'}, status=404)
+
+
+@login_required_message
+def vote_status_view(request, game_id):
+    """Poll vote status (AJAX GET)."""
+    try:
+        game = Game.objects.get(id=game_id)
+        if not game.player_characters.filter(player=request.user).exists():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+
+        total = game.player_characters.count()
+        votes_cast = Vote.objects.filter(game=game, round_number=game.round_number).count()
+        player_has_voted = Vote.objects.filter(
+            game=game, voter=request.user, round_number=game.round_number
+        ).exists()
+
+        # Check for expelled system message
+        expelled = None
+        last_expelled = game.messages.filter(text__startswith='__EXPELLED__').order_by('-id').first()
+        if last_expelled:
+            expelled = last_expelled.text[len('__EXPELLED__'):]
+
+        return JsonResponse({
+            'vote_phase': game.vote_phase,
+            'round_number': game.round_number,
+            'votes_cast': votes_cast,
+            'total': total,
+            'player_has_voted': player_has_voted,
+            'expelled': expelled,
+        })
+    except Game.DoesNotExist:
+        return JsonResponse({'error': 'Game not found'}, status=404)
+
+
+@login_required_message
+def lobby_chat_send_view(request, lobby_id):
+    """Send a chat message in a lobby (AJAX POST)"""
+    if request.method != 'POST':
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    try:
+        lobby = Lobby.objects.get(id=lobby_id)
+        if request.user not in lobby.participants.all():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+        try:
+            body = json.loads(request.body)
+            text = body.get('text', '').strip()
+        except (json.JSONDecodeError, AttributeError):
+            text = request.POST.get('text', '').strip()
+        if not text:
+            return JsonResponse({'error': 'Empty message'}, status=400)
+        if len(text) > 500:
+            return JsonResponse({'error': 'Message too long'}, status=400)
+        msg = LobbyMessage.objects.create(lobby=lobby, player=request.user, text=text)
+        avatar_url = ''
+        if hasattr(request.user, 'profile') and request.user.profile.avatar:
+            avatar_url = request.user.profile.avatar.url
+        return JsonResponse({
+            'id': msg.id,
+            'username': request.user.username,
+            'text': msg.text,
+            'avatar_url': avatar_url,
+            'is_you': True,
+            'time': msg.created_at.strftime('%H:%M'),
+        })
+    except Lobby.DoesNotExist:
+        return JsonResponse({'error': 'Lobby not found'}, status=404)
+
+
+@login_required_message
+def lobby_chat_poll_view(request, lobby_id):
+    """Poll for new lobby messages since a given message id (AJAX GET)"""
+    try:
+        lobby = Lobby.objects.get(id=lobby_id)
+        if request.user not in lobby.participants.all():
+            return JsonResponse({'error': 'Not a participant'}, status=403)
+        since_id = int(request.GET.get('since', 0))
+        msgs = LobbyMessage.objects.filter(lobby=lobby, id__gt=since_id).select_related('player__profile')
+        data = []
+        for msg in msgs:
+            avatar_url = ''
+            if hasattr(msg.player, 'profile') and msg.player.profile.avatar:
+                avatar_url = msg.player.profile.avatar.url
+            data.append({
+                'id': msg.id,
+                'username': msg.player.username,
+                'text': msg.text,
+                'avatar_url': avatar_url,
+                'is_you': msg.player == request.user,
+                'time': msg.created_at.strftime('%H:%M'),
+            })
+        return JsonResponse({'messages': data})
+    except Lobby.DoesNotExist:
+        return JsonResponse({'error': 'Lobby not found'}, status=404)

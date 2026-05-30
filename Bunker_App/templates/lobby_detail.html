@@ -75,7 +75,61 @@
     margin-bottom: .85rem; display: flex; align-items: center; gap: .6rem;
   }
   .section-title::after { content: ''; flex: 1; height: 1px; background: var(--border); }
-</style>
+
+  /* ── Lobby Chat ── */
+  .chat-box {
+    display: flex; flex-direction: column;
+    background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+    overflow: hidden; margin-bottom: 2rem;
+  }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 1rem;
+    display: flex; flex-direction: column; gap: .55rem;
+    max-height: 320px;
+    scroll-behavior: smooth;
+  }
+  .chat-msg {
+    display: flex; align-items: flex-start; gap: .6rem;
+  }
+  .chat-msg.mine { flex-direction: row-reverse; }
+  .chat-msg-avatar {
+    width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: .8rem; font-weight: 800; color: #000;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    overflow: hidden;
+  }
+  .chat-msg-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .chat-msg-body { max-width: 72%; }
+  .chat-msg-meta {
+    font-size: .7rem; color: var(--muted); margin-bottom: .18rem;
+    display: flex; gap: .4rem; align-items: baseline;
+  }
+  .chat-msg.mine .chat-msg-meta { flex-direction: row-reverse; }
+  .chat-msg-bubble {
+    display: inline-block;
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: .45rem .75rem;
+    font-size: .88rem; line-height: 1.5; word-break: break-word;
+  }
+  .chat-msg.mine .chat-msg-bubble {
+    background: rgba(245,166,35,.13); border-color: var(--gold-dim); color: var(--text);
+  }
+  .chat-footer {
+    display: flex; gap: .5rem; padding: .75rem 1rem;
+    border-top: 1px solid var(--border); background: var(--surface);
+  }
+  .chat-footer input {
+    flex: 1; background: var(--card); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--text);
+    font-family: var(--font-body); font-size: .9rem;
+    padding: .5rem .85rem; outline: none;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .chat-footer input:focus {
+    border-color: var(--gold); box-shadow: 0 0 0 3px rgba(245,166,35,.15);
+  }
+  .chat-empty { text-align: center; color: var(--muted); font-size: .85rem; padding: 1.5rem 0; }</style>
 {% endblock extra_head %}
  
 {% block content %}
@@ -214,4 +268,149 @@
   </div>
 </div>
 {% endif %}
+<!-- Lobby Chat -->
+<div class="section-title anim anim-d3">
+  💬 Lobby Chat
+</div>
+<div class="chat-box anim anim-d3">
+  <div class="chat-messages" id="chat-messages">
+    {% if lobby_messages %}
+      {% for msg in lobby_messages %}
+      <div class="chat-msg {% if msg.player == request.user %}mine{% endif %}" data-id="{{ msg.id }}">
+        <div class="chat-msg-avatar">
+          {% if msg.player.profile.avatar %}
+            <img src="{{ msg.player.profile.avatar.url }}" alt="avatar" />
+          {% else %}
+            {{ msg.player.username|first|upper }}
+          {% endif %}
+        </div>
+        <div class="chat-msg-body">
+          <div class="chat-msg-meta">
+            <span>{% if msg.player == request.user %}You{% else %}{{ msg.player.username }}{% endif %}</span>
+            <span>{{ msg.created_at|date:"H:i" }}</span>
+          </div>
+          <div class="chat-msg-bubble">{{ msg.text }}</div>
+        </div>
+      </div>
+      {% endfor %}
+    {% else %}
+      <div class="chat-empty" id="chat-empty">No messages yet. Say something! 👋</div>
+    {% endif %}
+  </div>
+  <div class="chat-footer">
+    <input type="text" id="chat-input" placeholder="Type a message…" maxlength="500" autocomplete="off" />
+    <button class="btn btn-primary btn-sm" id="chat-send-btn">Send</button>
+  </div>
+</div>
+
+<script>
+(function () {
+  const LOBBY_ID = {{ lobby.id }};
+  const SEND_URL = "{% url 'lobby_chat_send' lobby.id %}";
+  const POLL_URL = "{% url 'lobby_chat_poll' lobby.id %}";
+  const CSRF    = "{{ csrf_token }}";
+  const ME      = "{{ request.user.username }}";
+
+  const container = document.getElementById('chat-messages');
+  const input     = document.getElementById('chat-input');
+  const sendBtn   = document.getElementById('chat-send-btn');
+
+  // Track last seen message id from pre-rendered messages
+  let lastId = 0;
+  container.querySelectorAll('[data-id]').forEach(el => {
+    const id = parseInt(el.dataset.id, 10);
+    if (id > lastId) lastId = id;
+  });
+
+  function scrollBottom() {
+    container.scrollTop = container.scrollHeight;
+  }
+  scrollBottom();
+
+  function buildBubble(msg) {
+    const mine = msg.is_you;
+    const wrap = document.createElement('div');
+    wrap.className = 'chat-msg' + (mine ? ' mine' : '');
+    wrap.dataset.id = msg.id;
+
+    const avatarDiv = document.createElement('div');
+    avatarDiv.className = 'chat-msg-avatar';
+    if (msg.avatar_url) {
+      const img = document.createElement('img');
+      img.src = msg.avatar_url; img.alt = 'avatar';
+      avatarDiv.appendChild(img);
+    } else {
+      avatarDiv.textContent = msg.username.charAt(0).toUpperCase();
+    }
+
+    const body = document.createElement('div');
+    body.className = 'chat-msg-body';
+
+    const meta = document.createElement('div');
+    meta.className = 'chat-msg-meta';
+    meta.innerHTML = `<span>${mine ? 'You' : msg.username}</span><span>${msg.time}</span>`;
+
+    const bubble = document.createElement('div');
+    bubble.className = 'chat-msg-bubble';
+    bubble.textContent = msg.text;
+
+    body.appendChild(meta);
+    body.appendChild(bubble);
+    wrap.appendChild(avatarDiv);
+    wrap.appendChild(body);
+    return wrap;
+  }
+
+  function appendMessages(msgs) {
+    if (!msgs.length) return;
+    const empty = document.getElementById('chat-empty');
+    if (empty) empty.remove();
+    const atBottom = container.scrollHeight - container.scrollTop - container.clientHeight < 60;
+    msgs.forEach(msg => {
+      container.appendChild(buildBubble(msg));
+      if (msg.id > lastId) lastId = msg.id;
+    });
+    if (atBottom) scrollBottom();
+  }
+
+  async function sendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    sendBtn.disabled = true;
+    try {
+      const res = await fetch(SEND_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+        body: JSON.stringify({ text }),
+      });
+      const msg = await res.json();
+      if (msg.id) {
+        appendMessages([msg]);
+      }
+    } catch (e) { console.error(e); }
+    sendBtn.disabled = false;
+    input.focus();
+  }
+
+  sendBtn.addEventListener('click', sendMessage);
+  input.addEventListener('keydown', e => { if (e.key === 'Enter') sendMessage(); });
+
+  async function poll() {
+    try {
+      const res = await fetch(`${POLL_URL}?since=${lastId}`);
+      const data = await res.json();
+      if (data.messages && data.messages.length) {
+        // filter out own messages we already appended optimistically
+        const incoming = data.messages.filter(m => !m.is_you);
+        appendMessages(incoming);
+        // update lastId for all (including own) to not re-fetch
+        data.messages.forEach(m => { if (m.id > lastId) lastId = m.id; });
+      }
+    } catch (e) { /* ignore */ }
+    setTimeout(poll, 3000);
+  }
+  poll();
+})();
+</script>
 {% endblock content %}

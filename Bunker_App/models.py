@@ -41,6 +41,8 @@ class Game(models.Model):
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     current_turn_index = models.IntegerField(default=0)  # Index of player whose turn it is
+    round_number = models.IntegerField(default=1)         # Which round (circle) we are on
+    vote_phase = models.BooleanField(default=False)       # True when voting is in progress
 
     def __str__(self):
         if self.lobby:
@@ -55,11 +57,18 @@ class Game(models.Model):
         return None
     
     def next_turn(self):
-        """Move to the next player's turn"""
+        """Move to the next player's turn; returns True if a new round just started."""
         player_count = self.player_characters.count()
         if player_count > 0:
-            self.current_turn_index = (self.current_turn_index + 1) % player_count
+            next_index = (self.current_turn_index + 1) % player_count
+            new_round = next_index == 0  # wrapped back to first player
+            self.current_turn_index = next_index
+            if new_round:
+                self.round_number += 1
+                self.vote_phase = True  # trigger vote after every full round
             self.save()
+            return new_round
+        return False
 
 
 class PlayerCharacter(models.Model):
@@ -103,6 +112,30 @@ class PlayerCharacter(models.Model):
             if char_type in self.revealed_characteristics:
                 revealed.append((char_type, char_value, quality))
         return revealed
+    
+class Vote(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='votes')
+    voter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_cast')
+    target = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_received')
+    round_number = models.IntegerField()
+
+    class Meta:
+        unique_together = ('game', 'voter', 'round_number')  # one vote per player per round
+
+    def __str__(self):
+        return f"{self.voter} voted for {self.target} in game {self.game_id} round {self.round_number}"
+
+class LobbyMessage(models.Model):
+    lobby = models.ForeignKey(Lobby, on_delete=models.CASCADE, related_name='messages')
+    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lobby_messages')
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.player.username}: {self.text[:40]}"
     
 class GameMessage(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='messages')
