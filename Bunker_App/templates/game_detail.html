@@ -438,6 +438,37 @@
     padding: 2rem 1rem;
   }
 
+  /* Voting */
+  .vote-panel {
+    background: var(--card); border: 2px solid var(--gold);
+    border-radius: 12px; padding: 1.75rem 2rem; margin-bottom: 2rem;
+    box-shadow: 0 0 40px rgba(245,166,35,.1); animation: fadeUp .4s ease both;
+  }
+  .vote-header { margin-bottom: 1.25rem; }
+  .vote-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--gold); letter-spacing: .04em; }
+  .vote-subtitle { color: var(--muted); font-size: .85rem; margin-top: .25rem; }
+  .vote-instructions { color: var(--muted); font-size: .9rem; margin-bottom: 1rem; }
+  .vote-grid { display: flex; flex-wrap: wrap; gap: .75rem; }
+  .vote-btn {
+    display: flex; flex-direction: column; align-items: center; gap: .5rem;
+    background: var(--surface); border: 2px solid var(--border);
+    border-radius: 10px; padding: 1rem 1.25rem;
+    cursor: pointer; transition: border-color .2s, transform .15s, box-shadow .2s; min-width: 90px;
+  }
+  .vote-btn:hover { border-color: var(--red); transform: translateY(-2px); box-shadow: 0 4px 20px rgba(232,69,69,.25); }
+  .vote-btn:active { transform: scale(.96); }
+  .vote-btn-avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--gold), var(--teal));
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-head); font-size: 1.4rem; font-weight: 800; color: #000; overflow: hidden;
+  }
+  .vote-btn-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .vote-btn-name { font-family: var(--font-head); font-size: .85rem; font-weight: 700; color: var(--text); }
+  .vote-waiting { color: var(--teal); font-weight: 600; font-size: .95rem; margin-bottom: .75rem; }
+  .vote-progress-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+  .vote-progress-fill { height: 100%; background: var(--teal); border-radius: 99px; transition: width .5s ease; }
+
   /* ── Chat ── */
   .chat-panel {
     position: fixed; bottom: 1.5rem; right: 1.5rem;
@@ -541,39 +572,78 @@
   }
 
   /* floating notification banner */
+  /* backdrop */
+  #revealOverlay {
+    position: fixed; inset: 0; z-index: 9998;
+    background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
+    opacity: 0; pointer-events: none; transition: opacity .35s;
+  }
+  #revealOverlay.show { opacity: 1; }
+
+  /* main popup */
   #revealNotification {
-    position: fixed; top: 80px; left: 50%; transform: translateX(-50%) translateY(-120%);
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(.8);
     z-index: 9999;
-    background: var(--card); border: 2px solid var(--gold);
-    border-radius: 12px; padding: 1rem 1.75rem;
-    box-shadow: 0 8px 32px rgba(0,0,0,.7), 0 0 0 1px rgba(245,166,35,.2);
-    display: flex; align-items: center; gap: 1rem;
-    min-width: 280px; max-width: 420px;
-    transition: transform .4s cubic-bezier(.34,1.56,.64,1), opacity .4s;
+    background: linear-gradient(145deg, var(--card), #0e1420);
+    border-radius: 18px; padding: 2.5rem 3rem;
+    width: min(480px, 90vw); text-align: center;
     opacity: 0; pointer-events: none;
+    transition: transform .45s cubic-bezier(.34,1.56,.64,1), opacity .35s;
+    box-shadow: 0 24px 80px rgba(0,0,0,.85);
   }
-  #revealNotification.show {
-    transform: translateX(-50%) translateY(0);
-    opacity: 1;
+  #revealNotification.good {
+    border: 2px solid var(--teal);
+    box-shadow: 0 24px 80px rgba(0,0,0,.85), 0 0 60px rgba(45,224,196,.15);
   }
-  .reveal-notif-icon { font-size: 2rem; flex-shrink: 0; }
-  .reveal-notif-body { flex: 1; }
-  .reveal-notif-title {
+  #revealNotification.bad {
+    border: 2px solid var(--red);
+    box-shadow: 0 24px 80px rgba(0,0,0,.85), 0 0 60px rgba(232,69,69,.15);
+  }
+  #revealNotification.show { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+
+  .reveal-notif-icon {
+    font-size: 3.5rem; display: block; margin-bottom: .75rem;
+    animation: iconPop .5s cubic-bezier(.34,1.56,.64,1) both;
+  }
+  @keyframes iconPop {
+    from { transform: scale(0) rotate(-20deg); }
+    to   { transform: scale(1) rotate(0deg); }
+  }
+  .reveal-notif-label {
     font-family: var(--font-head); font-size: .75rem; font-weight: 700;
-    text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: .2rem;
+    text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-bottom: .5rem;
   }
   .reveal-notif-who {
-    font-family: var(--font-head); font-size: 1.1rem; font-weight: 800; color: var(--gold);
+    font-family: var(--font-head); font-size: 1.6rem; font-weight: 800;
+    color: var(--gold); margin-bottom: 1.25rem; letter-spacing: .04em;
   }
-  .reveal-notif-what {
-    font-size: .85rem; color: var(--text); margin-top: .15rem;
+  .reveal-notif-card { border-radius: 10px; padding: 1rem 1.5rem; margin-bottom: 1.5rem; }
+  #revealNotification.good .reveal-notif-card {
+    background: rgba(45,224,196,.1); border: 1px solid rgba(45,224,196,.3);
   }
-  .reveal-notif-what strong { color: var(--teal); }
-  .reveal-notif-what.bad strong { color: var(--red); }
+  #revealNotification.bad .reveal-notif-card {
+    background: rgba(232,69,69,.1); border: 1px solid rgba(232,69,69,.3);
+  }
+  .reveal-notif-type {
+    font-size: .72rem; text-transform: uppercase; letter-spacing: .1em;
+    color: var(--muted); margin-bottom: .35rem;
+  }
+  .reveal-notif-value {
+    font-family: var(--font-head); font-size: 1.55rem; font-weight: 800; letter-spacing: .03em;
+  }
+  #revealNotification.good .reveal-notif-value { color: var(--teal); }
+  #revealNotification.bad  .reveal-notif-value { color: var(--red); }
+  .reveal-notif-timer {
+    height: 3px; border-radius: 99px; background: var(--border); overflow: hidden; margin-top: .25rem;
+  }
+  .reveal-notif-timer-bar { height: 100%; width: 100%; border-radius: 99px; transition: width linear; }
+  #revealNotification.good .reveal-notif-timer-bar { background: var(--teal); }
+  #revealNotification.bad  .reveal-notif-timer-bar { background: var(--red); }
 
   @media (max-width: 640px) {
     .chat-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 1rem; }
-    #revealNotification { min-width: calc(100vw - 3rem); max-width: calc(100vw - 3rem); }
+    #revealNotification { padding: 2rem 1.5rem; }
   }
 </style>
 {% endblock extra_head %}
@@ -629,7 +699,43 @@
     </a>
   </div>
 </div>
- 
+
+<!-- Voting Phase -->
+{% if game.game_phase == 'voting' %}
+<div class="vote-panel" id="votingPanel">
+  <div class="vote-header">
+    <div class="vote-title">🗳️ Vote to Expel</div>
+    <div class="vote-subtitle">Round {{ game.round_number }} &mdash; {{ votes_cast }} / {{ votes_needed_total }} votes cast</div>
+  </div>
+  {% if has_voted %}
+    <div class="vote-waiting">&#x2705; You have voted. Waiting for others&hellip;</div>
+    <div class="vote-progress-bar"><div class="vote-progress-fill" style="width:{{ votes_cast|floatformat:0 }}%"></div></div>
+  {% else %}
+    <p class="vote-instructions">Choose a player to expel from the bunker:</p>
+    <div class="vote-grid">
+      {% for character in all_characters %}
+        {% if character.player != request.user %}
+        <form method="post" action="{% url 'vote' game.id %}">
+          {% csrf_token %}
+          <input type="hidden" name="target_id" value="{{ character.id }}">
+          <button type="submit" class="vote-btn">
+            <div class="vote-btn-avatar">
+              {% if character.player.profile.avatar %}
+                <img src="{{ character.player.profile.avatar.url }}" alt="avatar">
+              {% else %}
+                {% if character.gender == 'female' %}♀{% else %}♂{% endif %}
+              {% endif %}
+            </div>
+            <div class="vote-btn-name">{{ character.player.username }}</div>
+          </button>
+        </form>
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% endif %}
+</div>
+{% endif %}
+
 <!-- Your Character -->
 <div style="margin-bottom:3rem;">
   <div class="section-title">👤 Your Character</div>
@@ -745,15 +851,18 @@
  
 <!-- ── Chat Panel ── -->
 <!-- Reveal notification banner -->
+<div id="revealOverlay"></div>
 <div id="revealNotification">
-  <div class="reveal-notif-icon" id="revealNotifIcon"></div>
-  <div class="reveal-notif-body">
-    <div class="reveal-notif-title">Characteristic Revealed</div>
-    <div class="reveal-notif-who" id="revealNotifWho"></div>
-    <div class="reveal-notif-what" id="revealNotifWhat"></div>
+  <span class="reveal-notif-icon" id="revealNotifIcon"></span>
+  <div class="reveal-notif-label">Characteristic Revealed</div>
+  <div class="reveal-notif-who" id="revealNotifWho"></div>
+  <div class="reveal-notif-card">
+    <div class="reveal-notif-type" id="revealNotifType"></div>
+    <div class="reveal-notif-value" id="revealNotifValue"></div>
   </div>
+  <div class="reveal-notif-timer"><div class="reveal-notif-timer-bar" id="revealTimerBar"></div></div>
 </div>
- 
+
 <div class="chat-panel" id="chatPanel">
   <div class="chat-header" onclick="toggleChat()">
     <div class="chat-header-title">
@@ -772,7 +881,7 @@
     <button class="chat-send-btn" onclick="sendChatMessage()">Send</button>
   </div>
 </div>
- 
+
 <!-- Character Modal -->
 <div id="characterModal" class="modal" onclick="if(event.target===this)closeCharacterModal()">
   <div class="modal-content">
@@ -889,7 +998,7 @@
   const GAME_ID = {{ game.id }};
   const CSRF_TOKEN = '{{ csrf_token }}';
   let chatCollapsed = false;
-  let lastMessageId = 0;
+  let lastMessageId = {{ last_message_id }};
   let unreadCount = 0;
 
   function toggleChat() {
@@ -916,31 +1025,57 @@
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
               .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
   }
- 
+
   function parseReveal(text) {
     // Format: __REVEAL__username|CharType|Value|quality
     if (!text.startsWith('__REVEAL__')) return null;
     const parts = text.slice(10).split('|');
     return { username: parts[0], charType: parts[1], value: parts[2], quality: parts[3] || 'good' };
   }
- 
+
   let notifTimer = null;
+  let timerRaf = null;
+
   function showRevealNotification(reveal) {
     const notif = document.getElementById('revealNotification');
+    const overlay = document.getElementById('revealOverlay');
     const icon = document.getElementById('revealNotifIcon');
     const who = document.getElementById('revealNotifWho');
-    const what = document.getElementById('revealNotifWhat');
- 
-    icon.textContent = reveal.quality === 'bad' ? '\u26a0\ufe0f' : '\u2728';
+    const typeEl = document.getElementById('revealNotifType');
+    const valueEl = document.getElementById('revealNotifValue');
+    const bar = document.getElementById('revealTimerBar');
+
+    const isGood = reveal.quality !== 'bad';
+    notif.className = isGood ? 'good' : 'bad';
+    icon.textContent = isGood ? '\u2728' : '\u26a0\ufe0f';
     who.textContent = reveal.username + ' revealed:';
-    what.className = 'reveal-notif-what' + (reveal.quality === 'bad' ? ' bad' : '');
-    what.innerHTML = reveal.charType + ': <strong>' + escapeHTML(reveal.value) + '</strong>';
- 
+    typeEl.textContent = reveal.charType;
+    valueEl.textContent = reveal.value;
+
+    // Reset timer bar
+    bar.style.transition = 'none';
+    bar.style.width = '100%';
+
+    overlay.classList.add('show');
     notif.classList.add('show');
+
+    // Animate timer bar shrinking over 5s
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        bar.style.transition = 'width 5s linear';
+        bar.style.width = '0%';
+      });
+    });
+
     if (notifTimer) clearTimeout(notifTimer);
-    notifTimer = setTimeout(() => notif.classList.remove('show'), 5000);
+    notifTimer = setTimeout(() => {
+      notif.classList.remove('show');
+      overlay.classList.remove('show');
+      // Remove quality class after transition
+      setTimeout(() => { notif.className = ''; }, 400);
+    }, 5000);
   }
- 
+
   function buildMessageHTML(msg) {
     if (msg.is_system) {
       const reveal = parseReveal(msg.text);
@@ -954,6 +1089,25 @@
           + ' <span style="opacity:.6;font-size:.7rem;">' + msg.time + '</span>'
           + '</div>';
       }
+      if (msg.text === '__VOTE_START__') {
+        setTimeout(() => location.reload(), 400);
+        return '<div class="chat-msg-system good">'  
+          + '\ud83d\uddfd\ufe0f <strong>Voting phase started!</strong> Cast your vote to expel a player.'
+          + ' <span style="opacity:.6;font-size:.7rem;">' + msg.time + '</span></div>';
+      }
+      if (msg.text.startsWith('__VOTED__')) {
+        const who = msg.text.slice(9);
+        return '<div class="chat-msg-system good">\u2705 <strong>' + escapeHTML(who) + '</strong> has voted.</div>';
+      }
+      if (msg.text.startsWith('__EXPELLED__')) {
+        const who = msg.text.slice(12);
+        setTimeout(() => location.reload(), 1200);
+        return '<div class="chat-msg-system bad">\ud83d\udeaa <strong>' + escapeHTML(who) + '</strong> has been expelled from the bunker!</div>';
+      }
+      if (msg.text === '__TIE__') {
+        setTimeout(() => location.reload(), 1200);
+        return '<div class="chat-msg-system bad">\u26a0\ufe0f It\'s a tie! No one was expelled this round.</div>';
+      }
     }
     const cls = msg.is_you ? 'chat-msg me' : 'chat-msg';
     const avatarInner = msg.avatar_url
@@ -966,7 +1120,7 @@
       + '<div class="chat-msg-bubble">' + escapeHTML(msg.text) + '</div>'
       + '</div></div>';
   }
- 
+
   function appendMessages(msgs) {
     if (!msgs.length) return;
     const box = document.getElementById('chatMessages');
@@ -993,7 +1147,7 @@
       }
     }
   }
- 
+
   async function sendChatMessage() {
     const input = document.getElementById('chatInput');
     const text = input.value.trim();
@@ -1013,7 +1167,7 @@
     } catch (e) { console.error('Chat send error', e); }
     finally { input.disabled = false; input.focus(); }
   }
- 
+
   async function pollChat() {
     try {
       const resp = await fetch('/game/game/' + GAME_ID + '/chat/poll/?since=' + lastMessageId);
@@ -1024,7 +1178,7 @@
     } catch (e) { /* network blip */ }
     setTimeout(pollChat, 3000);
   }
- 
+
   pollChat();
   setTimeout(() => { location.reload(); }, 60000);
 </script>

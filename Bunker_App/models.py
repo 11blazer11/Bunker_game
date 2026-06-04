@@ -16,9 +16,6 @@ class LobbyInvitation(models.Model):
     class Meta:
         unique_together = ('lobby', 'invitee')
 
-    def __str__(self):
-        return f"{self.inviter} invited {self.invitee} to {self.lobby}"
-
 class Lobby(models.Model):
     STATUS_CHOICES = [
         ('waiting', 'Waiting'),
@@ -31,45 +28,26 @@ class Lobby(models.Model):
     participants = models.ManyToManyField(User, related_name='joined_lobbies')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
 
-    def __str__(self):
-        return f"{self.name} ({self.code})"
-
-
 class Game(models.Model):
     id = models.AutoField(primary_key=True)
     lobby = models.ForeignKey(Lobby, on_delete=models.SET_NULL, null=True, blank=True)
     started_at = models.DateTimeField(auto_now_add=True)
     finished_at = models.DateTimeField(null=True, blank=True)
-    current_turn_index = models.IntegerField(default=0)  # Index of player whose turn it is
-    round_number = models.IntegerField(default=1)         # Which round (circle) we are on
-    vote_phase = models.BooleanField(default=False)       # True when voting is in progress
+    current_turn_index = models.IntegerField(default=0)
+    game_phase = models.CharField(max_length=20, default='revealing')  # 'revealing' or 'voting'
+    round_number = models.IntegerField(default=1)
 
-    def __str__(self):
-        if self.lobby:
-            return f"Game #{self.id} - {self.lobby.name}"
-        return f"Game #{self.id} (no lobby)"
-    
     def get_current_player(self):
-        """Get the player whose turn it is"""
         players = self.player_characters.all().order_by('id')
         if players.exists() and self.current_turn_index < len(players):
             return list(players)[self.current_turn_index]
         return None
-    
+
     def next_turn(self):
-        """Move to the next player's turn; returns True if a new round just started."""
         player_count = self.player_characters.count()
         if player_count > 0:
-            next_index = (self.current_turn_index + 1) % player_count
-            new_round = next_index == 0  # wrapped back to first player
-            self.current_turn_index = next_index
-            if new_round:
-                self.round_number += 1
-                self.vote_phase = True  # trigger vote after every full round
+            self.current_turn_index = (self.current_turn_index + 1) % player_count
             self.save()
-            return new_round
-        return False
-
 
 class PlayerCharacter(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='player_characters')
@@ -83,60 +61,31 @@ class PlayerCharacter(models.Model):
     item = models.CharField(max_length=100)
     special_trait = models.CharField(max_length=200)
     phobia = models.CharField(max_length=100)
-    characteristics = models.JSONField(default=list)  # Store all characteristics including bad ones
-    revealed_characteristics = models.JSONField(default=list)  # Track which characteristics have been revealed
+    characteristics = models.JSONField(default=list)
+    revealed_characteristics = models.JSONField(default=list)
 
-    def __str__(self):
-        return f"{self.player.username}'s character in {self.game.lobby.name}"
-    
     def reveal_characteristic(self, char_type):
-        """Reveal a specific characteristic for this player"""
         if char_type not in self.revealed_characteristics:
             self.revealed_characteristics.append(char_type)
             self.save()
             return True
-        return False  # Already revealed or invalid
-    
+        return False
+
     def get_unrevealed_characteristics(self):
-        """Get the characteristics that have NOT been revealed for this player"""
         unrevealed = []
         for char_type, char_value, quality in self.characteristics:
             if char_type not in self.revealed_characteristics:
                 unrevealed.append((char_type, char_value, quality))
         return unrevealed
-    
+
     def get_revealed_characteristics(self):
-        """Get the characteristics that have been revealed for this player"""
         revealed = []
         for char_type, char_value, quality in self.characteristics:
             if char_type in self.revealed_characteristics:
                 revealed.append((char_type, char_value, quality))
         return revealed
-    
-class Vote(models.Model):
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='votes')
-    voter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_cast')
-    target = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_received')
-    round_number = models.IntegerField()
 
-    class Meta:
-        unique_together = ('game', 'voter', 'round_number')  # one vote per player per round
-
-    def __str__(self):
-        return f"{self.voter} voted for {self.target} in game {self.game_id} round {self.round_number}"
-
-class LobbyMessage(models.Model):
-    lobby = models.ForeignKey(Lobby, on_delete=models.CASCADE, related_name='messages')
-    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lobby_messages')
-    text = models.TextField(max_length=500)
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        ordering = ['created_at']
-
-    def __str__(self):
-        return f"{self.player.username}: {self.text[:40]}"
-    
+# NEW: Chat message model
 class GameMessage(models.Model):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='messages')
     player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='game_messages')
@@ -148,3 +97,29 @@ class GameMessage(models.Model):
 
     def __str__(self):
         return f"{self.player.username}: {self.text[:40]}"
+
+
+class Vote(models.Model):
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name='votes')
+    voter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='votes_cast')
+    target = models.ForeignKey(PlayerCharacter, on_delete=models.CASCADE, related_name='votes_received')
+    round_number = models.IntegerField()
+
+    class Meta:
+        unique_together = ('game', 'voter', 'round_number')  # one vote per player per round
+
+    def __str__(self):
+        return f"{self.voter.username} voted for {self.target.player.username} in round {self.round_number}"
+
+
+class LobbyMessage(models.Model):
+    lobby = models.ForeignKey(Lobby, on_delete=models.CASCADE, related_name='messages')
+    player = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lobby_messages')
+    text = models.TextField(max_length=500)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['created_at']
+
+    def __str__(self):
+        return f"{self.player.username} in {self.lobby.name}: {self.text[:40]}"
