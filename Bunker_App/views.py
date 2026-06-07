@@ -356,6 +356,7 @@ def game_detail_view(request, game_id):
             votes_needed = game.player_characters.count()
             votes_cast = votes_this_round.count()
 
+        # Get the last message ID (including system messages) to avoid duplicate notifications
         last_message = GameMessage.objects.filter(game=game).order_by('-id').first()
         last_message_id = last_message.id if last_message else 0
 
@@ -533,7 +534,7 @@ def chat_poll_view(request, game_id):
         if not game.player_characters.filter(player=request.user).exists():
             return JsonResponse({'error': 'Not a participant'}, status=403)
         since_id = int(request.GET.get('since', 0))
-        msgs = GameMessage.objects.filter(game=game, id__gt=since_id).select_related('player__profile')
+        msgs = GameMessage.objects.filter(game=game, id__gt=since_id).order_by('id').select_related('player__profile')
         data = []
         for msg in msgs:
             is_system = msg.text.startswith('__REVEAL__') or msg.text.startswith('__VOTE') or msg.text.startswith('__EXPELLED__') or msg.text.startswith('__TIE__')
@@ -694,7 +695,7 @@ def lobby_chat_poll_view(request, lobby_id):
             return JsonResponse({'error': 'Not a participant'}, status=403)
         since_id = int(request.GET.get('since', 0))
         from .models import LobbyMessage
-        msgs = LobbyMessage.objects.filter(lobby=lobby, id__gt=since_id).select_related('player__profile')
+        msgs = LobbyMessage.objects.filter(lobby=lobby, id__gt=since_id).order_by('id').select_related('player__profile')
         data = []
         for msg in msgs:
             avatar_url = ''
