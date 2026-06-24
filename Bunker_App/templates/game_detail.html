@@ -581,6 +581,19 @@
   #revealOverlay.show { opacity: 1; }
 
   /* main popup */
+  #revealNotification {
+    position: fixed; top: 50%; left: 50%;
+    transform: translate(-50%, -50%) scale(.7);
+    z-index: 9999;
+    background: linear-gradient(145deg, var(--card), #0e1420);
+    border-radius: 18px; padding: 2.5rem 3rem;
+    width: min(480px, 90vw); text-align: center;
+    opacity: 0; pointer-events: none;
+    transition: transform .45s cubic-bezier(.34,1.56,.64,1), opacity .35s;
+    box-shadow: 0 24px 80px rgba(0,0,0,.85);
+  }
+  #revealNotification.good { border: 2px solid var(--teal); box-shadow: 0 24px 80px rgba(0,0,0,.85), 0 0 60px rgba(45,224,196,.15); }
+  #revealNotification.bad  { border: 2px solid var(--red);  box-shadow: 0 24px 80px rgba(0,0,0,.85), 0 0 60px rgba(232,69,69,.15); }
   #revealNotification.show { transform: translate(-50%, -50%) scale(1); opacity: 1; pointer-events: auto; }
 
   .reveal-notif-icon {
@@ -1107,7 +1120,7 @@
         if (!processedReloadMessages.has(msg.id)) {
           processedReloadMessages.add(msg.id);
           localStorage.setItem(RELOAD_MSG_KEY, JSON.stringify(Array.from(processedReloadMessages)));
-          setTimeout(() => location.reload(), 400);
+          setTimeout(() => location.reload(), 6000);
         }
         return '<div class="chat-msg-system good">'
           + '\ud83d\uddfd\ufe0f <strong>Voting phase started!</strong> Cast your vote to expel a player.'
@@ -1169,7 +1182,8 @@
           if (!shownNotifications.has(msg.id)) {
             shownNotifications.add(msg.id);
             localStorage.setItem(NOTIF_MSG_KEY, JSON.stringify(Array.from(shownNotifications)));
-            showNotification({ icon: '\ud83d\uddfd\ufe0f', label: 'Vote Time!', who: 'Cast your vote to expel a player', type: '', value: '', quality: 'good' });
+            // Delay vote notification so reveal popup shows first
+            setTimeout(() => showNotification({ icon: '\ud83d\uddfd\ufe0f', label: 'Vote Time!', who: 'Cast your vote to expel a player', type: '', value: '', quality: 'good' }), 6000);
           }
         } else if (msg.text.startsWith('__EXPELLED__')) {
           if (!shownNotifications.has(msg.id)) {
