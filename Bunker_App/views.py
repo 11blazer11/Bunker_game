@@ -412,7 +412,12 @@ def reveal_characteristic_view(request, game_id):
     """Reveal a chosen characteristic for the current player"""
     try:
         game = Game.objects.get(id=game_id)
-        
+
+        # Block reveals during voting phase
+        if game.game_phase == 'voting':
+            messages.error(request, 'Voting is in progress. Wait until the vote is complete.')
+            return redirect('game_detail', game_id=game_id)
+
         # Get the current player's turn
         current_player = game.get_current_player()
         
