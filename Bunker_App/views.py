@@ -359,6 +359,30 @@ def game_detail_view(request, game_id):
         # Get the last message ID (including system messages) to avoid duplicate notifications
         last_message = GameMessage.objects.filter(game=game).order_by('-id').first()
         last_message_id = last_message.id if last_message else 0
+        should_delay_voting_panel = (
+            game.game_phase == 'voting'
+            and last_message is not None
+            and last_message.text == '__VOTE_START__'
+        )
+        latest_reveal = None
+        if should_delay_voting_panel:
+            reveal_message = (
+                GameMessage.objects
+                .filter(game=game, text__startswith='__REVEAL__')
+                .order_by('-id')
+                .first()
+            )
+            if reveal_message:
+                parts = reveal_message.text[len('__REVEAL__'):].split('|')
+                if len(parts) >= 3:
+                    latest_reveal = {
+                        'id': reveal_message.id,
+                        'player_id': reveal_message.player_id,
+                        'username': parts[0],
+                        'char_type': parts[1],
+                        'value': parts[2],
+                        'quality': parts[3] if len(parts) > 3 else 'good',
+                    }
 
         return render(request, 'game_detail.html', {
             'game': game,
@@ -372,6 +396,8 @@ def game_detail_view(request, game_id):
             'votes_needed_total': votes_needed,
             'votes_cast': votes_cast,
             'last_message_id': last_message_id,
+            'should_delay_voting_panel': should_delay_voting_panel,
+            'latest_reveal': latest_reveal,
         })
     
     except Game.DoesNotExist:
@@ -438,7 +464,7 @@ def reveal_characteristic_view(request, game_id):
             return redirect('game_detail', game_id=game_id)
         
         # Validate that this characteristic exists for the player
-        valid_char_types = [c[0] for c in current_player.characteristics]
+        valid_char_types = [c[0] for c in current_player.get_all_revealable_characteristics()]
         if char_type not in valid_char_types:
             messages.error(request, 'Invalid characteristic.')
             return redirect('game_detail', game_id=game_id)
@@ -452,17 +478,13 @@ def reveal_characteristic_view(request, game_id):
         current_player.reveal_characteristic(char_type)
         
         # Find the value to show in message
-        char_value = None
-        for c_type, c_value, c_quality in current_player.characteristics:
-            if c_type == char_type:
-                char_value = c_value
-                break
+        char_value = current_player.get_characteristic_value(char_type)
         
         messages.success(request, f'✨ Revealed: {char_type.replace("_", " ").title()} - {char_value}')
         
         # Post a system message to the game chat so everyone sees it
-        quality_label = ''
-        for c_type, c_value, c_quality in current_player.characteristics:
+        quality_label = 'neutral'
+        for c_type, c_value, c_quality in current_player.get_all_revealable_characteristics():
             if c_type == char_type:
                 quality_label = c_quality
                 break
@@ -482,7 +504,11 @@ def reveal_characteristic_view(request, game_id):
             len(p.revealed_characteristics) >= game.round_number
             for p in active_players
         )
-        if all_revealed_this_round and len(active_players) > 1:
+        anyone_has_unrevealed_characteristics = any(
+            p.has_unrevealed_characteristics()
+            for p in active_players
+        )
+        if all_revealed_this_round and len(active_players) > 1 and anyone_has_unrevealed_characteristics:
             game.game_phase = 'voting'
             game.save()
             GameMessage.objects.create(

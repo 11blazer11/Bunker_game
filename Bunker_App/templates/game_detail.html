@@ -444,6 +444,17 @@
     border-radius: 12px; padding: 1.75rem 2rem; margin-bottom: 2rem;
     box-shadow: 0 0 40px rgba(245,166,35,.1); animation: fadeUp .4s ease both;
   }
+  .vote-panel.waiting-for-reveal {
+    display: none;
+  }
+  .vote-panel.pop-out {
+    animation: votePop .45s ease both;
+    box-shadow: 0 0 0 1px rgba(245,166,35,.3), 0 0 70px rgba(245,166,35,.28);
+  }
+  @keyframes votePop {
+    from { opacity: 0; transform: translateY(-18px) scale(.96); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+  }
   .vote-header { margin-bottom: 1.25rem; }
   .vote-title { font-family: var(--font-head); font-size: 1.6rem; font-weight: 800; color: var(--gold); letter-spacing: .04em; }
   .vote-subtitle { color: var(--muted); font-size: .85rem; margin-top: .25rem; }
@@ -628,6 +639,7 @@
   }
   #revealNotification.good .reveal-notif-value { color: var(--teal); }
   #revealNotification.bad  .reveal-notif-value { color: var(--red); }
+  #revealNotification.neutral .reveal-notif-value { color: var(--gold); }
   .reveal-notif-close {
     position: absolute; top: .75rem; right: .75rem;
     background: rgba(255,255,255,.08); border: none; border-radius: 50%;
@@ -643,6 +655,7 @@
   .reveal-notif-timer-bar { height: 100%; width: 100%; border-radius: 99px; transition: width linear; }
   #revealNotification.good .reveal-notif-timer-bar { background: var(--teal); }
   #revealNotification.bad  .reveal-notif-timer-bar { background: var(--red); }
+  #revealNotification.neutral .reveal-notif-timer-bar { background: var(--gold); }
 
   @media (max-width: 640px) {
     .chat-panel { width: calc(100vw - 2rem); right: 1rem; bottom: 1rem; }
@@ -705,7 +718,7 @@
 
 <!-- Voting Phase -->
 {% if game.game_phase == 'voting' %}
-<div class="vote-panel" id="votingPanel">
+<div class="vote-panel{% if should_delay_voting_panel %} waiting-for-reveal{% endif %}" id="votingPanel">
   <div class="vote-header">
     <div class="vote-title">🗳️ Vote to Expel</div>
     <div class="vote-subtitle">Round {{ game.round_number }} &mdash; {{ votes_cast }} / {{ votes_needed_total }} votes cast</div>
@@ -726,7 +739,7 @@
               {% if character.player.profile.avatar %}
                 <img src="{{ character.player.profile.avatar.url }}" alt="avatar">
               {% else %}
-                {% if character.gender == 'female' %}♀{% else %}♂{% endif %}
+                {{ character.player.username|slice:":1"|upper }}
               {% endif %}
             </div>
             <div class="vote-btn-name">{{ character.player.username }}</div>
@@ -790,7 +803,7 @@
         {% if character.player.profile.avatar %}
           <img src="{{ character.player.profile.avatar.url }}" alt="{{ character.player.username }}" />
         {% else %}
-          {% if character.gender == 'female' %}♀{% else %}♂{% endif %}
+          {{ character.player.username|slice:":1"|upper }}
         {% endif %}
       </div>
       <div class="roster-card-username">{{ character.player.username }}</div>
@@ -909,7 +922,7 @@
     {{ character.id }}: {
       id: {{ character.id }},
       username: "{{ character.player.username }}",
-      gender: "{{ character.gender }}",
+      gender: {% if character.player == request.user %}"{{ character.gender }}"{% else %}""{% endif %},
       isYou: {% if character.player == request.user %}true{% else %}false{% endif %},
       hasAvatar: {% if character.player.profile.avatar %}true{% else %}false{% endif %},
       avatarUrl: "{% if character.player.profile.avatar %}{{ character.player.profile.avatar.url }}{% endif %}",
@@ -949,7 +962,9 @@
     if (data.hasAvatar) {
       avatarEl.innerHTML = `<img src="${data.avatarUrl}" alt="avatar" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`;
     } else {
-      avatarEl.innerHTML = data.gender === 'female' ? '♀' : '♂';
+      avatarEl.textContent = data.isYou
+        ? (data.gender === 'female' ? 'F' : 'M')
+        : data.username.charAt(0).toUpperCase();
     }
 
     // Username + you badge
@@ -957,7 +972,9 @@
       ? ' <span style="background:rgba(45,224,196,.15);border:1px solid var(--teal);border-radius:4px;padding:.2rem .5rem;font-size:.7rem;color:var(--teal);vertical-align:middle;">YOU</span>'
       : '');
 
-    genderEl.textContent = data.gender ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1) : '';
+    genderEl.textContent = data.isYou && data.gender
+      ? data.gender.charAt(0).toUpperCase() + data.gender.slice(1)
+      : '';
 
     // Characteristics grid
     gridEl.innerHTML = '';
@@ -1013,6 +1030,17 @@
   const NOTIF_MSG_KEY = 'game_' + GAME_ID + '_shown_notifs';
   const shownNotifications = new Set(JSON.parse(localStorage.getItem(NOTIF_MSG_KEY) || '[]'));
   let isInitialLoad = true;
+  const CURRENT_USER_ID = {{ request.user.id }};
+  const NOTIFICATION_DURATION_MS = 2600;
+  const REVEAL_BEFORE_VOTE_DELAY_MS = 2800;
+  const INITIAL_REVEAL = {% if latest_reveal %}{
+    id: {{ latest_reveal.id }},
+    playerId: {{ latest_reveal.player_id }},
+    username: "{{ latest_reveal.username|escapejs }}",
+    charType: "{{ latest_reveal.char_type|escapejs }}",
+    value: "{{ latest_reveal.value|escapejs }}",
+    quality: "{{ latest_reveal.quality|escapejs }}"
+  }{% else %}null{% endif %};
 
   function toggleChat() {
     chatCollapsed = !chatCollapsed;
@@ -1059,8 +1087,9 @@
     const cardEl   = document.getElementById('revealNotifCard');
     const bar      = document.getElementById('revealTimerBar');
 
-    const isGood = quality !== 'bad';
-    notif.className = isGood ? 'good' : 'bad';
+    notif.className = quality === 'bad'
+      ? 'bad'
+      : (quality === 'neutral' ? 'neutral' : 'good');
     iconEl.textContent  = icon;
     labelEl.textContent = label;
     whoEl.textContent   = who;
@@ -1074,12 +1103,12 @@
     notif.classList.add('show');
 
     requestAnimationFrame(() => requestAnimationFrame(() => {
-      bar.style.transition = 'width 5s linear';
+      bar.style.transition = 'width ' + NOTIFICATION_DURATION_MS + 'ms linear';
       bar.style.width = '0%';
     }));
 
     if (notifTimer) clearTimeout(notifTimer);
-    notifTimer = setTimeout(closeNotification, 5000);
+    notifTimer = setTimeout(closeNotification, NOTIFICATION_DURATION_MS);
   }
 
   function closeNotification() {
@@ -1120,7 +1149,7 @@
         if (!processedReloadMessages.has(msg.id)) {
           processedReloadMessages.add(msg.id);
           localStorage.setItem(RELOAD_MSG_KEY, JSON.stringify(Array.from(processedReloadMessages)));
-          setTimeout(() => location.reload(), 6000);
+          setTimeout(() => location.reload(), REVEAL_BEFORE_VOTE_DELAY_MS);
         }
         return '<div class="chat-msg-system good">'
           + '\ud83d\uddfd\ufe0f <strong>Voting phase started!</strong> Cast your vote to expel a player.'
@@ -1173,7 +1202,7 @@
       if (msg.is_system && !isInitialLoad) {
         const reveal = parseReveal(msg.text);
         if (reveal) {
-          if (!shownNotifications.has(msg.id)) {
+          if (!msg.is_you && !shownNotifications.has(msg.id)) {
             shownNotifications.add(msg.id);
             localStorage.setItem(NOTIF_MSG_KEY, JSON.stringify(Array.from(shownNotifications)));
             showRevealNotification(reveal);
@@ -1182,8 +1211,9 @@
           if (!shownNotifications.has(msg.id)) {
             shownNotifications.add(msg.id);
             localStorage.setItem(NOTIF_MSG_KEY, JSON.stringify(Array.from(shownNotifications)));
-            // Delay vote notification so reveal popup shows first
-            setTimeout(() => showNotification({ icon: '\ud83d\uddfd\ufe0f', label: 'Vote Time!', who: 'Cast your vote to expel a player', type: '', value: '', quality: 'good' }), 6000);
+            setTimeout(() => {
+              showNotification({ icon: '\ud83d\uddfd\ufe0f', label: 'Vote Time!', who: 'Cast your vote to expel a player', type: '', value: '', quality: 'good' });
+            }, REVEAL_BEFORE_VOTE_DELAY_MS);
           }
         } else if (msg.text.startsWith('__EXPELLED__')) {
           if (!shownNotifications.has(msg.id)) {
@@ -1215,6 +1245,28 @@
         badge.style.display = 'inline';
       }
     }
+  }
+
+  function popVotingPanelIntoView() {
+    const panel = document.getElementById('votingPanel');
+    if (!panel) return;
+    const shouldShowInitialReveal = (
+      panel.classList.contains('waiting-for-reveal')
+      && INITIAL_REVEAL
+      && INITIAL_REVEAL.playerId !== CURRENT_USER_ID
+      && !shownNotifications.has(INITIAL_REVEAL.id)
+    );
+    const revealDelay = shouldShowInitialReveal ? REVEAL_BEFORE_VOTE_DELAY_MS : 0;
+    if (shouldShowInitialReveal) {
+      shownNotifications.add(INITIAL_REVEAL.id);
+      localStorage.setItem(NOTIF_MSG_KEY, JSON.stringify(Array.from(shownNotifications)));
+      showRevealNotification(INITIAL_REVEAL);
+    }
+    setTimeout(() => {
+      panel.classList.remove('waiting-for-reveal');
+      panel.classList.add('pop-out');
+      panel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, revealDelay);
   }
 
   async function sendChatMessage() {
@@ -1252,6 +1304,7 @@
     setTimeout(pollChat, 3000);
   }
 
+  popVotingPanelIntoView();
   pollChat();
 </script>
 {% endblock content %}

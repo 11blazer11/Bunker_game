@@ -64,6 +64,39 @@ class PlayerCharacter(models.Model):
     characteristics = models.JSONField(default=list)
     revealed_characteristics = models.JSONField(default=list)
 
+    BASE_REVEALABLE_CHARACTERISTICS = (
+        ('age', 'Age'),
+        ('gender', 'Gender'),
+        ('height', 'Height'),
+    )
+
+    def get_characteristic_value(self, char_type):
+        if char_type == 'age':
+            return self.age
+        if char_type == 'gender':
+            return self.gender.title()
+        if char_type == 'height':
+            return self.height
+
+        for c_type, c_value, _ in self.characteristics:
+            if c_type == char_type:
+                return c_value
+        return None
+
+    def get_all_revealable_characteristics(self):
+        revealable = [
+            (char_type, self.get_characteristic_value(char_type), 'neutral')
+            for char_type, _ in self.BASE_REVEALABLE_CHARACTERISTICS
+        ]
+        revealable.extend(self.characteristics)
+        return revealable
+
+    def get_unrevealed_characteristic_count(self):
+        return len(self.get_unrevealed_characteristics())
+
+    def has_unrevealed_characteristics(self):
+        return self.get_unrevealed_characteristic_count() > 0
+
     def reveal_characteristic(self, char_type):
         if char_type not in self.revealed_characteristics:
             self.revealed_characteristics.append(char_type)
@@ -73,14 +106,14 @@ class PlayerCharacter(models.Model):
 
     def get_unrevealed_characteristics(self):
         unrevealed = []
-        for char_type, char_value, quality in self.characteristics:
+        for char_type, char_value, quality in self.get_all_revealable_characteristics():
             if char_type not in self.revealed_characteristics:
                 unrevealed.append((char_type, char_value, quality))
         return unrevealed
 
     def get_revealed_characteristics(self):
         revealed = []
-        for char_type, char_value, quality in self.characteristics:
+        for char_type, char_value, quality in self.get_all_revealable_characteristics():
             if char_type in self.revealed_characteristics:
                 revealed.append((char_type, char_value, quality))
         return revealed
