@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}PartyUp{% endblock %}</title>
+  <title>{% block title %}Bunker{% endblock %}</title>
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -241,7 +241,7 @@
  
 {% if request.user.is_authenticated %}
 <nav>
-  <a class="nav-brand" href="{% url 'main' %}">PARTY<span>UP</span></a>
+  <a class="nav-brand" href="{% url 'main' %}">BUN<span>KER</span></a>
   <div class="nav-links">
     <a href="{% url 'main' %}">Home</a>
     <a href="{% url 'friends' %}">Friends</a>

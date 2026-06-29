@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Create Party — Bunker{% endblock %}
+
+{% block content %}
+<div style="max-width:520px; margin:0 auto;">
+  <div class="page-header anim" style="flex-direction:column; align-items:flex-start;">
+    <h1 style="font-size:2rem;">🎮 Create Party</h1>
+    <p class="subtitle">Set up your lobby before inviting friends</p>
+  </div>
+
+  <div class="card anim anim-d1">
+    <form method="POST" action="{% url 'create_party' %}">
+      {% csrf_token %}
+
+      <div class="field">
+        <label for="name">Lobby Name</label>
+        <input type="text" id="name" name="name"
+               placeholder="{{ request.user.username }}'s lobby"
+               maxlength="60" autocomplete="off">
+      </div>
+
+      <div class="field">
+        <label for="max_players">Max Players</label>
+        <div style="display:flex; gap:.6rem; flex-wrap:wrap;" id="max-players-group">
+          {% for n in "23456789" %}
+          <label style="cursor:pointer;">
+            <input type="radio" name="max_players" value="{{ n }}"
+                   {% if n == "9" %}checked{% endif %}
+                   style="display:none;" class="mp-radio">
+            <span class="mp-btn">{{ n }}</span>
+          </label>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Visibility</label>
+        <div style="display:flex; flex-direction:column; gap:.5rem;">
+          <label style="cursor:pointer; display:flex; align-items:center; gap:.75rem; padding:.7rem 1rem; border-radius:var(--radius); border:1px solid var(--border); transition:border-color .2s;" class="vis-opt">
+            <input type="radio" name="visibility" value="public" checked style="accent-color:var(--gold);">
+            <div>
+              <div style="font-weight:600; font-size:.9rem;">🌐 Public</div>
+              <div style="font-size:.78rem; color:var(--muted);">Anyone can find and join via lobby browser</div>
+            </div>
+          </label>
+          <label style="cursor:pointer; display:flex; align-items:center; gap:.75rem; padding:.7rem 1rem; border-radius:var(--radius); border:1px solid var(--border); transition:border-color .2s;" class="vis-opt">
+            <input type="radio" name="visibility" value="friends_only" style="accent-color:var(--gold);">
+            <div>
+              <div style="font-weight:600; font-size:.9rem;">👥 Friends Only</div>
+              <div style="font-size:.78rem; color:var(--muted);">Only your friends can join via code or invite</div>
+            </div>
+          </label>
+          <label style="cursor:pointer; display:flex; align-items:center; gap:.75rem; padding:.7rem 1rem; border-radius:var(--radius); border:1px solid var(--border); transition:border-color .2s;" class="vis-opt">
+            <input type="radio" name="visibility" value="private" style="accent-color:var(--gold);">
+            <div>
+              <div style="font-weight:600; font-size:.9rem;">🔒 Private</div>
+              <div style="font-size:.78rem; color:var(--muted);">Invite-only — players need a direct invitation</div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div style="display:flex; gap:.75rem; margin-top:1.5rem;">
+        <button type="submit" class="btn btn-primary" style="flex:1;">Create Lobby</button>
+        <a href="{% url 'main' %}" class="btn btn-outline">Cancel</a>
+      </div>
+    </form>
+  </div>
+</div>
+
+<style>
+  .mp-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; border-radius: var(--radius);
+    border: 2px solid var(--border); background: var(--surface);
+    font-family: var(--font-head); font-size: 1.1rem; font-weight: 700;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .mp-radio:checked + .mp-btn {
+    border-color: var(--gold); background: rgba(245,166,35,.15); color: var(--gold);
+  }
+  .vis-opt:has(input:checked) { border-color: var(--gold); background: rgba(245,166,35,.06); }
+</style>
+{% endblock %}

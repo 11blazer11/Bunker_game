@@ -22,11 +22,18 @@ class Lobby(models.Model):
         ('in_game', 'In Game'),
         ('finished', 'Finished'),
     ]
+    VISIBILITY_CHOICES = [
+        ('public', 'Public'),
+        ('private', 'Private'),
+        ('friends_only', 'Friends Only'),
+    ]
     name = models.CharField(max_length=255)
     code = models.PositiveIntegerField(unique=True)
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_lobbies')
     participants = models.ManyToManyField(User, related_name='joined_lobbies')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='waiting')
+    max_players = models.IntegerField(default=9)
+    visibility = models.CharField(max_length=20, choices=VISIBILITY_CHOICES, default='public')
 
 class Game(models.Model):
     id = models.AutoField(primary_key=True)

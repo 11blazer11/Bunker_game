@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}Home — PartyUp{% endblock %}
+{% block title %}Home — Bunker{% endblock %}
  
 {% block extra_head %}
 <style>
@@ -148,7 +148,7 @@
       <div class="lobby-name">{{ lobby.name }}</div>
       <div class="lobby-meta">
         <span>Code: <strong style="color:var(--text)">{{ lobby.code }}</strong></span>
-        <span>{{ lobby.participants.count }} / 9 players</span>
+        <span>{{ lobby.participants.count }} / {{ lobby.max_players }}</span>
         {% if lobby.creator == request.user %}<span class="badge badge-gold">Host</span>{% endif %}
       </div>
     </div>

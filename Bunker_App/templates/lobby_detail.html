@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}{{ lobby.name }} — PartyUp{% endblock %}
+{% block title %}{{ lobby.name }} — Bunker{% endblock %}
  
 {% block extra_head %}
 <style>
@@ -145,7 +145,10 @@
         🔑 {{ lobby.code }}
       </div>
       <div style="font-size:.85rem; color:var(--muted);">
-        <span class="badge badge-muted">{{ lobby.participants.count }} / 9 players</span>
+        <span class="badge badge-muted">{{ lobby.participants.count }} / {{ lobby.max_players }} players</span>
+        {% if lobby.visibility == "public" %}<span class="badge badge-teal" style="margin-left:.4rem;">🌐 Public</span>
+        {% elif lobby.visibility == "friends_only" %}<span class="badge badge-gold" style="margin-left:.4rem;">👥 Friends Only</span>
+        {% else %}<span class="badge badge-muted" style="margin-left:.4rem;">🔒 Private</span>{% endif %}
       </div>
     </div>
   </div>
@@ -154,6 +157,9 @@
  
   <div class="lobby-actions-bar">
     {% if request.user == lobby.creator and lobby.status == 'waiting' %}
+    <button class="btn btn-outline btn-sm" type="button" onclick="var p=document.getElementById('settingsPanel');p.style.display=p.style.display==='none'?'block':'none'">
+      ⚙️ Settings
+    </button>
     <a href="{% url 'start_game' lobby.id %}" class="btn btn-primary btn-sm"
       onclick="return confirm('Start game for all {{ lobby.participants.count }} players?')">
       🎮 Start Game
@@ -181,6 +187,57 @@
     {% endif %}
   </div>
 </div>
+
+{% if request.user == lobby.creator %}
+<div id="settingsPanel" style="display:none; margin-top:1.25rem; background:var(--surface); border:1px solid var(--border); border-radius:10px; padding:1.25rem;">
+  <form method="POST">
+    {% csrf_token %}
+    <input type="hidden" name="action" value="update_settings">
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem;">
+      <div>
+        <label style="display:block; font-size:.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:.08em; margin-bottom:.4rem;">Lobby Name</label>
+        <input type="text" name="name" value="{{ lobby.name }}" maxlength="60" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:.9rem; padding:.5rem .8rem; outline:none;">
+      </div>
+      <div>
+        <label style="display:block; font-size:.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:.08em; margin-bottom:.4rem;">Max Players</label>
+        <select name="max_players" style="width:100%; background:var(--card); border:1px solid var(--border); border-radius:var(--radius); color:var(--text); font-size:.9rem; padding:.5rem .8rem; outline:none;">
+          {% for n in "23456789" %}
+          <option value="{{ n }}" {% if lobby.max_players == n|add:0 %}selected{% endif %}>{{ n }} players</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <label style="display:block; font-size:.75rem; text-transform:uppercase; color:var(--muted); letter-spacing:.08em; margin-bottom:.5rem;">Visibility</label>
+      <div style="display:flex; gap:.5rem; flex-wrap:wrap;">
+        <label style="cursor:pointer;">
+          <input type="radio" name="visibility" value="public" {% if lobby.visibility == "public" %}checked{% endif %} style="display:none;" class="vis-r">
+          <span class="vis-tag {% if lobby.visibility == "public" %}active{% endif %}">🌐 Public</span>
+        </label>
+        <label style="cursor:pointer;">
+          <input type="radio" name="visibility" value="friends_only" {% if lobby.visibility == "friends_only" %}checked{% endif %} style="display:none;" class="vis-r">
+          <span class="vis-tag {% if lobby.visibility == "friends_only" %}active{% endif %}">👥 Friends Only</span>
+        </label>
+        <label style="cursor:pointer;">
+          <input type="radio" name="visibility" value="private" {% if lobby.visibility == "private" %}checked{% endif %} style="display:none;" class="vis-r">
+          <span class="vis-tag {% if lobby.visibility == "private" %}active{% endif %}">🔒 Private</span>
+        </label>
+      </div>
+    </div>
+    <button type="submit" class="btn btn-primary btn-sm">Save Settings</button>
+  </form>
+</div>
+<style>
+  .vis-tag { display:inline-block; padding:.35rem .85rem; border-radius:var(--radius); border:2px solid var(--border); background:var(--card); color:var(--muted); font-size:.82rem; font-weight:600; cursor:pointer; transition:all .15s; }
+  .vis-r:checked + .vis-tag, .vis-tag.active { border-color:var(--gold); background:rgba(245,166,35,.12); color:var(--gold); }
+</style>
+<script>
+  document.querySelectorAll(".vis-r").forEach(r => r.addEventListener("change", () => {
+    document.querySelectorAll(".vis-tag").forEach(t => t.classList.remove("active"));
+    if (r.checked) r.nextElementSibling.classList.add("active");
+  }));
+</script>
+{% endif %}
  
 <!-- Participants -->
 <div class="section-title anim anim-d1">

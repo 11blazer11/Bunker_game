@@ -122,7 +122,19 @@ def lobby_detail_view(request, lobby_id):
         
         if request.method == 'POST':
             action = request.POST.get('action')
-            if action == 'kick' and request.user == lobby.creator:
+            if action == 'update_settings' and request.user == lobby.creator:
+                new_name = request.POST.get('name', '').strip()
+                if new_name:
+                    lobby.name = new_name
+                max_p = request.POST.get('max_players', '')
+                if max_p.isdigit():
+                    lobby.max_players = max(2, min(9, int(max_p)))
+                vis = request.POST.get('visibility', '')
+                if vis in ('public', 'private', 'friends_only'):
+                    lobby.visibility = vis
+                lobby.save()
+                messages.success(request, 'Lobby settings updated.')
+            elif action == 'kick' and request.user == lobby.creator:
                 user_id = request.POST.get('user_id')
                 try:
                     user_to_kick = User.objects.get(id=user_id)
