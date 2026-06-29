@@ -122,19 +122,7 @@ def lobby_detail_view(request, lobby_id):
         
         if request.method == 'POST':
             action = request.POST.get('action')
-            if action == 'update_settings' and request.user == lobby.creator:
-                new_name = request.POST.get('name', '').strip()
-                if new_name:
-                    lobby.name = new_name
-                max_p = request.POST.get('max_players', '')
-                if max_p.isdigit():
-                    lobby.max_players = max(2, min(9, int(max_p)))
-                vis = request.POST.get('visibility', '')
-                if vis in ('public', 'private', 'friends_only'):
-                    lobby.visibility = vis
-                lobby.save()
-                messages.success(request, 'Lobby settings updated.')
-            elif action == 'kick' and request.user == lobby.creator:
+            if action == 'kick' and request.user == lobby.creator:
                 user_id = request.POST.get('user_id')
                 try:
                     user_to_kick = User.objects.get(id=user_id)
@@ -451,9 +439,12 @@ def reveal_characteristic_view(request, game_id):
     try:
         game = Game.objects.get(id=game_id)
 
-        # Block reveals during voting phase
+        # Block reveals during voting or finished phase
         if game.game_phase == 'voting':
             messages.error(request, 'Voting is in progress. Wait until the vote is complete.')
+            return redirect('game_detail', game_id=game_id)
+        if game.game_phase == 'finished':
+            messages.error(request, 'The game is over.')
             return redirect('game_detail', game_id=game_id)
 
         # Get the current player's turn
@@ -679,12 +670,27 @@ def vote_view(request, game_id):
                     text='__TIE__'
                 )
 
-            # Move to next round revealing phase
-            game.game_phase = 'revealing'
-            game.round_number += 1
-            # Reset turn index to 0 for the next round
-            game.current_turn_index = 0
-            game.save()
+            # Check if only 2 players remain - game over
+            remaining = game.player_characters.count()
+            if remaining <= 2:
+                from django.utils import timezone
+                game.finished_at = timezone.now()
+                game.game_phase = 'finished'
+                game.save()
+                survivors = ', '.join(
+                    p.player.username for p in game.player_characters.select_related('player')
+                )
+                GameMessage.objects.create(
+                    game=game,
+                    player=request.user,
+                    text=f'__GAME_OVER__{survivors}'
+                )
+            else:
+                # Move to next round revealing phase
+                game.game_phase = 'revealing'
+                game.round_number += 1
+                game.current_turn_index = 0
+                game.save()
 
         messages.success(request, 'Your vote has been cast.')
         return redirect('game_detail', game_id=game_id)
